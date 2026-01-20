@@ -72,20 +72,29 @@ export default function SecuritySettingsPage() {
         return
       }
 
-      // Get profile
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('totp_enabled, require_2fa, last_password_change')
-        .eq('id', user.id)
-        .single()
+      // Get profile - handle missing columns gracefully
+      try {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('totp_enabled, require_2fa, last_password_change')
+          .eq('id', user.id)
+          .single()
 
-      setProfile(profileData)
+        setProfile(profileData || { totp_enabled: false })
+      } catch {
+        // Columns may not exist yet - use defaults
+        setProfile({ totp_enabled: false })
+      }
 
       // Get sessions
-      const res = await fetch('/api/auth/sessions')
-      if (res.ok) {
-        const { sessions: sessionData } = await res.json()
-        setSessions(sessionData || [])
+      try {
+        const res = await fetch('/api/auth/sessions')
+        if (res.ok) {
+          const { sessions: sessionData } = await res.json()
+          setSessions(sessionData || [])
+        }
+      } catch {
+        // Sessions API may fail - ignore
       }
     } catch (err) {
       console.error('Failed to fetch data:', err)
