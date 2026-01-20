@@ -43,8 +43,9 @@ interface Member {
 
 export default function MembersPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -56,12 +57,42 @@ export default function MembersPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchMembers()
-    checkAdminStatus()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const fetchMembers = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // First fetch community to get the ID
+      let communityQuery = supabase
+        .from('communities')
+        .select('id')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community } = await communityQuery.single()
+
+      if (!community) {
+        setIsLoading(false)
+        return
+      }
+
+      setCommunityId(community.id)
+      await fetchMembers(community.id)
+      await checkAdminStatus(community.id)
+    } catch {
+      // Silently fail
+    }
+  }
+
+  const fetchMembers = async (cId: string) => {
     try {
       const { data, error } = await supabase
         .from('community_members')
@@ -83,7 +114,7 @@ export default function MembersPage() {
             email
           )
         `)
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .eq('status', 'active')
         .order('display_name')
 
@@ -103,14 +134,14 @@ export default function MembersPage() {
     }
   }
 
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = async (cId: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const { data: member } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', communityId)
+      .eq('community_id', cId)
       .eq('user_id', user.id)
       .single()
 
@@ -189,7 +220,7 @@ export default function MembersPage() {
         </div>
         {isAdmin && (
           <Button asChild>
-            <Link href={`/c/${communityId}/admin/members/invite`}>
+            <Link href={`/c/${communitySlug}/admin/invites`}>
               <UserPlus className="h-4 w-4 mr-2" />
               Invite Members
             </Link>
@@ -278,7 +309,7 @@ export default function MembersPage() {
             <MemberCard
               key={member.id}
               member={member}
-              communityId={communityId}
+              communityId={communitySlug}
               variant="card"
               isNew={isNewMember(member.joined_at)}
             />
@@ -290,7 +321,7 @@ export default function MembersPage() {
             <MemberCard
               key={member.id}
               member={member}
-              communityId={communityId}
+              communityId={communitySlug}
               variant="list"
               isNew={isNewMember(member.joined_at)}
             />

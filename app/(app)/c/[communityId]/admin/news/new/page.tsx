@@ -42,8 +42,9 @@ const categories = [
 export default function NewNewsPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -60,12 +61,36 @@ export default function NewNewsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    checkAdminStatus()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const checkAdminStatus = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
     try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // First fetch community to get the ID
+      let communityQuery = supabase
+        .from('communities')
+        .select('id')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community } = await communityQuery.single()
+
+      if (!community) {
+        router.push('/')
+        return
+      }
+
+      setCommunityId(community.id)
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
@@ -75,20 +100,20 @@ export default function NewNewsPage() {
       const { data: member } = await supabase
         .from('community_members')
         .select('id, role')
-        .eq('community_id', communityId)
+        .eq('community_id', community.id)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single()
 
       if (!member || (member.role !== 'admin' && member.role !== 'moderator')) {
         toast.error('Admin access required')
-        router.push(`/c/${communityId}/news`)
+        router.push(`/c/${communitySlug}/news`)
         return
       }
 
       setCurrentMemberId(member.id)
     } catch (err) {
-      console.error('Failed to check admin status:', err)
+      console.error('Failed to initialize page:', err)
     } finally {
       setIsLoading(false)
     }
@@ -174,7 +199,7 @@ export default function NewNewsPage() {
       if (error) throw error
 
       toast.success(publish ? 'Article published!' : 'Draft saved')
-      router.push(`/c/${communityId}/news/${article.id}`)
+      router.push(`/c/${communitySlug}/news/${article.id}`)
     } catch (err: any) {
       console.error('Save failed:', err)
       toast.error(err.message || 'Failed to save article')
@@ -196,7 +221,7 @@ export default function NewNewsPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/news`}
+          href={`/c/${communitySlug}/news`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -355,7 +380,7 @@ export default function NewNewsPage() {
         </Button>
         <Button
           variant="outline"
-          onClick={() => router.push(`/c/${communityId}/news`)}
+          onClick={() => router.push(`/c/${communitySlug}/news`)}
         >
           Cancel
         </Button>

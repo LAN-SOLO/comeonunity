@@ -23,7 +23,7 @@ interface Props {
 const PAGE_SIZE = 20
 
 export default function CommunityReportsPage({ params }: Props) {
-  const { communityId } = use(params)
+  const { communityId: communitySlug } = use(params)
 
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,7 +48,7 @@ export default function CommunityReportsPage({ params }: Props) {
   const fetchCounts = async () => {
     try {
       const res = await fetch(
-        `/api/communities/${communityId}/admin/reports?counts=true`
+        `/api/communities/${communitySlug}/admin/reports?counts=true`
       )
       const data = await res.json()
       if (res.ok && data.counts) {
@@ -68,7 +68,7 @@ export default function CommunityReportsPage({ params }: Props) {
       params.set('limit', PAGE_SIZE.toString())
 
       const res = await fetch(
-        `/api/communities/${communityId}/admin/reports?${params}`
+        `/api/communities/${communitySlug}/admin/reports?${params}`
       )
       const data = await res.json()
 
@@ -85,11 +85,11 @@ export default function CommunityReportsPage({ params }: Props) {
 
   useEffect(() => {
     fetchCounts()
-  }, [communityId])
+  }, [communitySlug])
 
   useEffect(() => {
     fetchReports()
-  }, [communityId, activeTab, currentPage])
+  }, [communitySlug, activeTab, currentPage])
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
@@ -99,7 +99,7 @@ export default function CommunityReportsPage({ params }: Props) {
   const handleReview = async (report: Report) => {
     try {
       const res = await fetch(
-        `/api/communities/${communityId}/admin/reports/${report.id}`,
+        `/api/communities/${communitySlug}/admin/reports/${report.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -122,7 +122,7 @@ export default function CommunityReportsPage({ params }: Props) {
     notes: string
   ) => {
     const res = await fetch(
-      `/api/communities/${communityId}/admin/reports/${reportId}`,
+      `/api/communities/${communitySlug}/admin/reports/${reportId}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,7 @@ export default function CommunityReportsPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <Link
-          href={`/c/${communityId}/admin`}
+          href={`/c/${communitySlug}/admin`}
           className="text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-5 w-5" />

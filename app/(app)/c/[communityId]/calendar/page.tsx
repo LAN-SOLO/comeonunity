@@ -57,8 +57,9 @@ interface Event {
 
 export default function CalendarPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -68,9 +69,38 @@ export default function CalendarPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchEvents()
-    checkAdminStatus()
+    initializePage()
+  }, [communitySlug])
+
+  useEffect(() => {
+    if (communityId) {
+      fetchEvents()
+      checkAdminStatus()
+    }
   }, [communityId, currentMonth])
+
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // Fetch community by slug or id
+    let communityQuery = supabase
+      .from('communities')
+      .select('id, slug')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (!community) return
+
+    setCommunityId(community.id)
+  }
 
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -158,7 +188,9 @@ export default function CalendarPage() {
 
           return {
             ...event,
-            organizer: event.organizer as Event['organizer'],
+            organizer: Array.isArray(event.organizer)
+              ? event.organizer[0] || null
+              : event.organizer as Event['organizer'],
             rsvp_count: countResult.count || 0,
             user_rsvp: userRsvp.data?.status || null,
           }
@@ -229,7 +261,7 @@ export default function CalendarPage() {
           </Tabs>
           {isAdmin && (
             <Button asChild>
-              <Link href={`/c/${communityId}/admin/events/new`}>
+              <Link href={`/c/${communitySlug}/admin/events/new`}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Event
               </Link>
@@ -313,7 +345,7 @@ export default function CalendarPage() {
                       <EventCard
                         key={event.id}
                         event={event}
-                        communityId={communityId}
+                        communityId={communitySlug}
                         variant="calendar"
                       />
                     ))}
@@ -339,7 +371,7 @@ export default function CalendarPage() {
               </p>
               {isAdmin && (
                 <Button asChild>
-                  <Link href={`/c/${communityId}/admin/events/new`}>
+                  <Link href={`/c/${communitySlug}/admin/events/new`}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Event
                   </Link>
@@ -352,7 +384,7 @@ export default function CalendarPage() {
                 <EventCard
                   key={event.id}
                   event={event}
-                  communityId={communityId}
+                  communityId={communitySlug}
                 />
               ))}
             </div>
@@ -369,7 +401,7 @@ export default function CalendarPage() {
               <EventCard
                 key={event.id}
                 event={event}
-                communityId={communityId}
+                communityId={communitySlug}
                 variant="compact"
               />
             ))}

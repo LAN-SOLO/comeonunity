@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -30,72 +30,33 @@ interface Notification {
 }
 
 interface NotificationsDropdownProps {
-  communityId: string
+  communityId: string // This is actually the slug from the URL path
 }
 
-export function NotificationsDropdown({ communityId }: NotificationsDropdownProps) {
+export function NotificationsDropdown({ communityId: communitySlug }: NotificationsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [actualCommunityId, setActualCommunityId] = useState<string | null>(null)
+  const isMountedRef = useRef(true)
 
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchNotifications()
-    fetchUnreadCount()
-
-    // Subscribe to new notifications (only if table exists)
-    let channel: ReturnType<typeof supabase.channel> | null = null
-
-    try {
-      channel = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `community_id=eq.${communityId}`,
-          },
-          (payload) => {
-            setNotifications((prev) => [payload.new as Notification, ...prev])
-            setUnreadCount((prev) => prev + 1)
-          }
-        )
-        .subscribe((status) => {
-          // Silently handle subscription errors (table may not exist)
-          if (status === 'CHANNEL_ERROR') {
-            channel?.unsubscribe()
-          }
-        })
-    } catch {
-      // Silently fail - realtime not available or table doesn't exist
-    }
-
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
-    }
-  }, [communityId])
-
-  const fetchNotifications = async () => {
-    setIsLoading(true)
+  const fetchNotifications = useCallback(async (cId: string) => {
+    if (isMountedRef.current) setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user || !isMountedRef.current) return
 
-      // Get member ID
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .eq('user_id', user.id)
         .single()
 
-      if (!member) return
+      if (!member || !isMountedRef.current) return
 
       const { data, error } = await supabase
         .from('notifications')
@@ -109,54 +70,115 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
           data
         `)
         .eq('user_id', member.id)
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (error) {
-        // Silently fail - table may not exist yet
-        return
-      }
+      if (error || !isMountedRef.current) return
 
       setNotifications(data || [])
-    } catch {
-      // Silently fail - notifications not set up yet
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
     } finally {
-      setIsLoading(false)
+      if (isMountedRef.current) setIsLoading(false)
     }
-  }
+  }, [supabase])
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async (cId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user || !isMountedRef.current) return
 
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .eq('user_id', user.id)
         .single()
 
-      if (!member) return
+      if (!member || !isMountedRef.current) return
 
       const { count, error } = await supabase
         .from('notifications')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', member.id)
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .eq('read', false)
 
-      if (error) {
-        // Silently fail - table may not exist yet
-        return
-      }
+      if (error || !isMountedRef.current) return
 
       setUnreadCount(count || 0)
-    } catch {
-      // Silently fail - notifications not set up yet
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const initializeNotifications = async () => {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Resolve community to get the actual UUID
+      let communityQuery = supabase
+        .from('communities')
+        .select('id')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community } = await communityQuery.single()
+
+      if (!community || !isMountedRef.current) return
+
+      setActualCommunityId(community.id)
+      fetchNotifications(community.id)
+      fetchUnreadCount(community.id)
+
+      // Subscribe to new notifications (only if table exists)
+      try {
+        channel = supabase
+          .channel('notifications')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `community_id=eq.${community.id}`,
+            },
+            (payload) => {
+              if (isMountedRef.current) {
+                setNotifications((prev) => [payload.new as Notification, ...prev])
+                setUnreadCount((prev) => prev + 1)
+              }
+            }
+          )
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR') {
+              channel?.unsubscribe()
+            }
+          })
+      } catch {
+        // Silently fail
+      }
+    }
+
+    initializeNotifications()
+
+    return () => {
+      isMountedRef.current = false
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [communitySlug, fetchNotifications, fetchUnreadCount, supabase])
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -177,6 +199,8 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
   }
 
   const markAllAsRead = async () => {
+    if (!actualCommunityId) return
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -184,7 +208,7 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .eq('user_id', user.id)
         .single()
 
@@ -194,7 +218,7 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
         .from('notifications')
         .update({ read: true })
         .eq('user_id', member.id)
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .eq('read', false)
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
@@ -251,7 +275,7 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  communityId={communityId}
+                  communitySlug={communitySlug}
                   onClick={() => {
                     if (!notification.read) {
                       markAsRead(notification.id)
@@ -272,7 +296,7 @@ export function NotificationsDropdown({ communityId }: NotificationsDropdownProp
             asChild
             onClick={() => setIsOpen(false)}
           >
-            <Link href={`/c/${communityId}/notifications`}>
+            <Link href={`/c/${communitySlug}/notifications`}>
               View all notifications
             </Link>
           </Button>

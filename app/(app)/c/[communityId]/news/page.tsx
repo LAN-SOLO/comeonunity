@@ -40,8 +40,9 @@ interface Article {
 
 export default function NewsPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [articles, setArticles] = useState<Article[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -51,12 +52,49 @@ export default function NewsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchArticles()
-    checkAdminStatus()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const fetchArticles = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // First, resolve the community by slug or id
+      let communityQuery = supabase
+        .from('communities')
+        .select('id, slug')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community, error: communityError } = await communityQuery.single()
+
+      if (communityError || !community) {
+        setIsLoading(false)
+        return
+      }
+
+      setCommunityId(community.id)
+
+      // Fetch articles and check admin status in parallel
+      await Promise.all([
+        fetchArticles(community.id),
+        checkAdminStatus(community.id),
+      ])
+    } catch {
+      // Silently fail
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchArticles = async (cId: string) => {
     try {
       const { data, error } = await supabase
         .from('news')
@@ -74,7 +112,7 @@ export default function NewsPage() {
             avatar_url
           )
         `)
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .eq('status', 'published')
         .lte('published_at', new Date().toISOString())
         .order('pinned', { ascending: false })
@@ -93,19 +131,17 @@ export default function NewsPage() {
       setArticles(processedArticles)
     } catch {
       // Silently fail - news not set up yet
-    } finally {
-      setIsLoading(false)
     }
   }
 
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = async (cId: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const { data: member } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', communityId)
+      .eq('community_id', cId)
       .eq('user_id', user.id)
       .single()
 
@@ -170,7 +206,7 @@ export default function NewsPage() {
         </div>
         {isAdmin && (
           <Button asChild>
-            <Link href={`/c/${communityId}/admin/news/new`}>
+            <Link href={`/c/${communitySlug}/admin/news/new`}>
               <Plus className="h-4 w-4 mr-2" />
               New Post
             </Link>
@@ -228,7 +264,7 @@ export default function NewsPage() {
           {featuredArticle && !searchQuery && selectedCategory === 'all' && (
             <NewsCard
               article={featuredArticle}
-              communityId={communityId}
+              communityId={communitySlug}
               variant="featured"
             />
           )}
@@ -240,7 +276,7 @@ export default function NewsPage() {
                 <NewsCard
                   key={article.id}
                   article={article}
-                  communityId={communityId}
+                  communityId={communitySlug}
                   variant="card"
                 />
               ))}
@@ -254,7 +290,7 @@ export default function NewsPage() {
                 <NewsCard
                   key={article.id}
                   article={article}
-                  communityId={communityId}
+                  communityId={communitySlug}
                   variant="card"
                 />
               ))}

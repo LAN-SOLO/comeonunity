@@ -39,8 +39,9 @@ const conditions = [
 export default function NewItemPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -57,11 +58,43 @@ export default function NewItemPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    checkMembership()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const checkMembership = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Fetch community by slug or id
+      let communityQuery = supabase
+        .from('communities')
+        .select('id, slug')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community, error: communityError } = await communityQuery.single()
+
+      if (communityError || !community) {
+        return
+      }
+
+      setCommunityId(community.id)
+      await checkMembership(community.id)
+    } catch (err) {
+      console.error('Failed to initialize:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const checkMembership = async (actualCommunityId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -72,22 +105,20 @@ export default function NewItemPage() {
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single()
 
       if (!member) {
         toast.error('You must be a member to add items')
-        router.push(`/c/${communityId}`)
+        router.push(`/c/${communitySlug}`)
         return
       }
 
       setCurrentMemberId(member.id)
     } catch (err) {
       console.error('Failed to check membership:', err)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -195,7 +226,7 @@ export default function NewItemPage() {
       if (error) throw error
 
       toast.success('Item added successfully!')
-      router.push(`/c/${communityId}/items/${item.id}`)
+      router.push(`/c/${communitySlug}/items/${item.id}`)
     } catch (err: any) {
       console.error('Save failed:', err)
       toast.error(err.message || 'Failed to add item')
@@ -217,7 +248,7 @@ export default function NewItemPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/items`}
+          href={`/c/${communitySlug}/items`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -377,7 +408,7 @@ export default function NewItemPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/c/${communityId}/items`)}
+            onClick={() => router.push(`/c/${communitySlug}/items`)}
           >
             Cancel
           </Button>

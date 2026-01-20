@@ -45,7 +45,7 @@ const typeLabels: Record<string, string> = {
 }
 
 export default async function EventDetailPage({ params }: Props) {
-  const { communityId, eventId } = await params
+  const { communityId: communitySlug, eventId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -53,17 +53,43 @@ export default async function EventDetailPage({ params }: Props) {
     redirect('/login')
   }
 
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  // Fetch community by slug or id
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect if accessed by ID instead of slug
+  if (communitySlug !== community.slug && communitySlug === community.id) {
+    redirect(`/c/${community.slug}/calendar/${eventId}`)
+  }
+
   // Check membership and get role
   const { data: member } = await supabase
     .from('community_members')
     .select('id, role')
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
   if (!member) {
-    redirect(`/c/${communityId}`)
+    redirect(`/c/${community.slug}`)
   }
 
   const isAdmin = member.role === 'admin' || member.role === 'moderator'
@@ -97,7 +123,7 @@ export default async function EventDetailPage({ params }: Props) {
       )
     `)
     .eq('id', eventId)
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .single()
 
   if (!event) {
@@ -167,7 +193,7 @@ export default async function EventDetailPage({ params }: Props) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/calendar`}
+          href={`/c/${community.slug}/calendar`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -212,7 +238,7 @@ export default async function EventDetailPage({ params }: Props) {
               </h1>
               {isAdmin && (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/c/${communityId}/admin/events/${eventId}/edit`}>
+                  <Link href={`/c/${community.slug}/admin/events/${eventId}/edit`}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Link>
@@ -288,7 +314,7 @@ export default async function EventDetailPage({ params }: Props) {
           {/* Organizer */}
           <Card className="p-6">
             <h2 className="font-semibold mb-4">Organized By</h2>
-            <Link href={`/c/${communityId}/members/${organizer?.id}`}>
+            <Link href={`/c/${community.slug}/members/${organizer?.id}`}>
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={organizer?.avatar_url || undefined} />
@@ -312,7 +338,7 @@ export default async function EventDetailPage({ params }: Props) {
             <h2 className="font-semibold mb-4">Are you going?</h2>
             <RsvpButtons
               eventId={eventId}
-              communityId={communityId}
+              communityId={community.slug}
               currentStatus={userRsvp?.status}
               canRsvp={canRsvp}
               isPastEvent={isPastEvent}
@@ -345,7 +371,7 @@ export default async function EventDetailPage({ params }: Props) {
                   return (
                     <Link
                       key={attendee?.id}
-                      href={`/c/${communityId}/members/${attendee?.id}`}
+                      href={`/c/${community.slug}/members/${attendee?.id}`}
                     >
                       <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                         <Avatar className="h-8 w-8">

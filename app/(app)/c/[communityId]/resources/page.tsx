@@ -39,8 +39,9 @@ interface Resource {
 
 export default function ResourcesPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [resources, setResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -50,9 +51,38 @@ export default function ResourcesPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchResources()
-    checkAdminStatus()
+    initializePage()
+  }, [communitySlug])
+
+  useEffect(() => {
+    if (communityId) {
+      fetchResources()
+      checkAdminStatus()
+    }
   }, [communityId])
+
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // Fetch community by slug or id
+    let communityQuery = supabase
+      .from('communities')
+      .select('id, slug')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (!community) return
+
+    setCommunityId(community.id)
+  }
 
   const fetchResources = async () => {
     setIsLoading(true)
@@ -140,14 +170,14 @@ export default function ResourcesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/c/${communityId}/bookings`}>
+            <Link href={`/c/${communitySlug}/bookings`}>
               <CalendarDays className="h-4 w-4 mr-2" />
               My Bookings
             </Link>
           </Button>
           {isAdmin && (
             <Button asChild>
-              <Link href={`/c/${communityId}/admin/resources/new`}>
+              <Link href={`/c/${communitySlug}/admin/resources/new`}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Resource
               </Link>
@@ -218,7 +248,7 @@ export default function ResourcesPage() {
             <ResourceCard
               key={resource.id}
               resource={resource}
-              communityId={communityId}
+              communityId={communitySlug}
             />
           ))}
         </div>

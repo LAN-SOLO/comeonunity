@@ -40,9 +40,10 @@ interface Item {
 export default function ItemsPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
   const ownerFilter = searchParams.get('owner')
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [items, setItems] = useState<Item[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,12 +55,47 @@ export default function ItemsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchItems()
-    fetchCurrentMember()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const fetchItems = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Fetch community by slug or id
+      let communityQuery = supabase
+        .from('communities')
+        .select('id, slug')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community, error: communityError } = await communityQuery.single()
+
+      if (communityError || !community) {
+        return
+      }
+
+      setCommunityId(community.id)
+
+      // Fetch items
+      await fetchItems(community.id)
+      // Fetch current member
+      await fetchCurrentMember(community.id)
+    } catch {
+      // Silently fail
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchItems = async (actualCommunityId: string) => {
     try {
       let query = supabase
         .from('items')
@@ -79,7 +115,7 @@ export default function ItemsPage() {
             unit_number
           )
         `)
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .order('created_at', { ascending: false })
 
       if (ownerFilter) {
@@ -99,19 +135,17 @@ export default function ItemsPage() {
       setItems(processedItems)
     } catch {
       // Silently fail - tables may not exist yet
-    } finally {
-      setIsLoading(false)
     }
   }
 
-  const fetchCurrentMember = async () => {
+  const fetchCurrentMember = async (actualCommunityId: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
     const { data: member } = await supabase
       .from('community_members')
       .select('id')
-      .eq('community_id', communityId)
+      .eq('community_id', actualCommunityId)
       .eq('user_id', user.id)
       .single()
 
@@ -174,7 +208,7 @@ export default function ItemsPage() {
           </p>
         </div>
         <Button asChild>
-          <Link href={`/c/${communityId}/items/new`}>
+          <Link href={`/c/${communitySlug}/items/new`}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Link>
@@ -249,7 +283,7 @@ export default function ItemsPage() {
             size="sm"
             asChild
           >
-            <Link href={`/c/${communityId}/items`}>Clear filter</Link>
+            <Link href={`/c/${communitySlug}/items`}>Clear filter</Link>
           </Button>
         </div>
       )}
@@ -273,7 +307,7 @@ export default function ItemsPage() {
           </p>
           {!searchQuery && selectedCategories.length === 0 && !showAvailableOnly && (
             <Button asChild>
-              <Link href={`/c/${communityId}/items/new`}>
+              <Link href={`/c/${communitySlug}/items/new`}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Item
               </Link>
@@ -286,7 +320,7 @@ export default function ItemsPage() {
             <ItemCard
               key={item.id}
               item={item}
-              communityId={communityId}
+              communityId={communitySlug}
               variant="card"
             />
           ))}
@@ -297,7 +331,7 @@ export default function ItemsPage() {
             <ItemCard
               key={item.id}
               item={item}
-              communityId={communityId}
+              communityId={communitySlug}
               variant="list"
             />
           ))}

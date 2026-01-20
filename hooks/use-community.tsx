@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface Community {
@@ -45,123 +45,135 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
   const [currentMember, setCurrentMember] = useState<CommunityMember | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const isMountedRef = useRef(true)
 
-  const supabase = createClient()
+  const fetchCommunities = useCallback(async () => {
+    const supabase = createClient()
 
-  const fetchCommunities = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      if (isMountedRef.current) {
+        setIsLoading(true)
+        setError(null)
+      }
 
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setCommunities([])
-        setCurrentCommunity(null)
-        setCurrentMember(null)
+      if (!user || !isMountedRef.current) {
+        if (isMountedRef.current) {
+          setCommunities([])
+          setCurrentCommunity(null)
+          setCurrentMember(null)
+        }
         return
       }
 
       // Get user's communities through their memberships
       const { data: memberships, error: membershipError } = await supabase
         .from('community_members')
-        .select(`
-          id,
-          community_id,
-          user_id,
-          role,
-          display_name,
-          avatar_url,
-          status,
-          community:communities (
-            id,
-            name,
-            slug,
-            description,
-            type,
-            logo_url,
-            primary_color,
-            plan,
-            status
-          )
-        `)
+        .select('community_id')
         .eq('user_id', user.id)
         .eq('status', 'active')
 
       if (membershipError) {
-        throw membershipError
+        console.error('Error fetching memberships:', membershipError)
+        return
       }
 
-      const userCommunities = memberships
-        ?.filter(m => m.community)
-        .map(m => m.community as unknown as Community) || []
+      if (!isMountedRef.current) return
 
-      setCommunities(userCommunities)
-
-      // If there's a current community, update member info
-      if (currentCommunity) {
-        const membership = memberships?.find(m => m.community_id === currentCommunity.id)
-        if (membership) {
-          setCurrentMember({
-            id: membership.id,
-            community_id: membership.community_id,
-            user_id: membership.user_id,
-            role: membership.role as 'admin' | 'moderator' | 'member',
-            display_name: membership.display_name,
-            avatar_url: membership.avatar_url,
-            status: membership.status,
-          })
-        }
+      if (!memberships || memberships.length === 0) {
+        setCommunities([])
+        return
       }
-    } catch {
-      // Silently fail - tables may not exist yet
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  // Fetch member info when community changes
-  const fetchMemberInfo = async (communityId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: member } = await supabase
-        .from('community_members')
-        .select('id, community_id, user_id, role, display_name, avatar_url, status')
-        .eq('community_id', communityId)
-        .eq('user_id', user.id)
+      // Fetch the actual communities
+      const communityIds = memberships.map(m => m.community_id)
+      const { data: communityData, error: communityError } = await supabase
+        .from('communities')
+        .select('id, name, slug, description, type, logo_url, primary_color, plan, status')
+        .in('id', communityIds)
         .eq('status', 'active')
-        .single()
 
-      if (member) {
-        setCurrentMember({
-          ...member,
-          role: member.role as 'admin' | 'moderator' | 'member',
-        })
+      if (communityError) {
+        console.error('Error fetching communities:', communityError)
+        return
       }
-    } catch {
-      // Silently fail - tables may not exist yet
-    }
-  }
 
+      if (!isMountedRef.current) return
+
+      setCommunities(communityData || [])
+    } catch (err) {
+      // Silently fail - tables may not exist yet or request was aborted
+      if (err instanceof Error && err.name === 'AbortError') {
+        return
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
+    }
+  }, [])
+
+  // Initial fetch and auth subscription
   useEffect(() => {
+    isMountedRef.current = true
+    const supabase = createClient()
+
     fetchCommunities()
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchCommunities()
+      if (isMountedRef.current) {
+        fetchCommunities()
+      }
     })
 
     return () => {
+      isMountedRef.current = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchCommunities])
 
+  // Fetch member info when community changes
   useEffect(() => {
-    if (currentCommunity) {
-      fetchMemberInfo(currentCommunity.id)
-    } else {
+    if (!currentCommunity) {
       setCurrentMember(null)
+      return
+    }
+
+    let isMounted = true
+    const supabase = createClient()
+
+    const fetchMemberInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user || !isMounted) return
+
+        const { data: member } = await supabase
+          .from('community_members')
+          .select('id, community_id, user_id, role, display_name, avatar_url, status')
+          .eq('community_id', currentCommunity.id)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .single()
+
+        if (member && isMounted) {
+          setCurrentMember({
+            ...member,
+            role: member.role as 'admin' | 'moderator' | 'member',
+          })
+        }
+      } catch (err) {
+        // Silently fail - tables may not exist yet or request was aborted
+        if (err instanceof Error && err.name === 'AbortError') {
+          return
+        }
+      }
+    }
+
+    fetchMemberInfo()
+
+    return () => {
+      isMounted = false
     }
   }, [currentCommunity?.id])
 

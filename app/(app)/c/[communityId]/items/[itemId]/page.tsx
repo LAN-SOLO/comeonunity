@@ -34,7 +34,7 @@ const conditionLabels: Record<string, string> = {
 }
 
 export default async function ItemDetailPage({ params }: Props) {
-  const { communityId, itemId } = await params
+  const { communityId: communitySlug, itemId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -42,17 +42,43 @@ export default async function ItemDetailPage({ params }: Props) {
     redirect('/login')
   }
 
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  // Fetch community by slug or id
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect if accessed by ID instead of slug
+  if (communitySlug !== community.slug && communitySlug === community.id) {
+    redirect(`/c/${community.slug}/items/${itemId}`)
+  }
+
   // Get current member
   const { data: currentMember } = await supabase
     .from('community_members')
     .select('id')
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
   if (!currentMember) {
-    redirect(`/c/${communityId}`)
+    redirect(`/c/${community.slug}`)
   }
 
   // Get item with owner details
@@ -84,7 +110,7 @@ export default async function ItemDetailPage({ params }: Props) {
       )
     `)
     .eq('id', itemId)
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .single()
 
   if (!item) {
@@ -129,7 +155,7 @@ export default async function ItemDetailPage({ params }: Props) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/items`}
+          href={`/c/${community.slug}/items`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -187,7 +213,7 @@ export default async function ItemDetailPage({ params }: Props) {
             </div>
             {isOwner && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/c/${communityId}/items/${itemId}/edit`}>
+                <Link href={`/c/${community.slug}/items/${itemId}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Link>
@@ -230,7 +256,7 @@ export default async function ItemDetailPage({ params }: Props) {
           {/* Borrow Button */}
           {!isOwner && item.status === 'available' && (
             <Button className="w-full mb-6" asChild>
-              <Link href={`/c/${communityId}/items/${itemId}/borrow`}>
+              <Link href={`/c/${community.slug}/items/${itemId}/borrow`}>
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Request to Borrow
               </Link>
@@ -251,7 +277,7 @@ export default async function ItemDetailPage({ params }: Props) {
               </p>
               {isOwner && (
                 <Button variant="outline" size="sm" className="mt-3" asChild>
-                  <Link href={`/c/${communityId}/bookings/${activeBooking.id}`}>
+                  <Link href={`/c/${community.slug}/bookings/${activeBooking.id}`}>
                     View Request
                   </Link>
                 </Button>
@@ -262,7 +288,7 @@ export default async function ItemDetailPage({ params }: Props) {
           {/* Owner Card */}
           <SectionHeader title="Owner" />
           <Card className="p-4">
-            <Link href={`/c/${communityId}/members/${owner?.id}`}>
+            <Link href={`/c/${community.slug}/members/${owner?.id}`}>
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={owner?.avatar_url || undefined} />

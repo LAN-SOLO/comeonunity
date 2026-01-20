@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default async function NewsArticlePage({ params }: Props) {
-  const { communityId, articleId } = await params
+  const { communityId: communitySlug, articleId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -28,17 +28,43 @@ export default async function NewsArticlePage({ params }: Props) {
     redirect('/login')
   }
 
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  // Resolve the community by slug or id
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect if accessed by ID instead of slug
+  if (communitySlug !== community.slug && communitySlug === community.id) {
+    redirect(`/c/${community.slug}/news/${articleId}`)
+  }
+
   // Check membership and get role
   const { data: member } = await supabase
     .from('community_members')
     .select('id, role')
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
   if (!member) {
-    redirect(`/c/${communityId}`)
+    redirect(`/c/${community.slug}`)
   }
 
   const isAdmin = member.role === 'admin' || member.role === 'moderator'
@@ -66,7 +92,7 @@ export default async function NewsArticlePage({ params }: Props) {
       )
     `)
     .eq('id', articleId)
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .single()
 
   if (!article) {
@@ -94,7 +120,7 @@ export default async function NewsArticlePage({ params }: Props) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/news`}
+          href={`/c/${community.slug}/news`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -120,7 +146,7 @@ export default async function NewsArticlePage({ params }: Props) {
           </div>
           {isAdmin && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/c/${communityId}/admin/news/${articleId}/edit`}>
+              <Link href={`/c/${community.slug}/admin/news/${articleId}/edit`}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Link>
@@ -135,7 +161,7 @@ export default async function NewsArticlePage({ params }: Props) {
 
         {/* Author and date */}
         <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-          <Link href={`/c/${communityId}/members/${author?.id}`}>
+          <Link href={`/c/${community.slug}/members/${author?.id}`}>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={author?.avatar_url || undefined} />

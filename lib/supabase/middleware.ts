@@ -82,13 +82,21 @@ export async function updateSession(request: NextRequest) {
 
   // Check platform admin access
   if (isAdminRoute && user) {
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('platform_role')
-      .eq('id', user.id)
-      .single()
+    try {
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('platform_role')
+        .eq('id', user.id)
+        .single()
 
-    if (!profile || !['admin', 'superadmin'].includes(profile.platform_role)) {
+      // Redirect if no profile, error, or not admin
+      if (error || !profile || !['admin', 'superadmin'].includes(profile.platform_role)) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // On error, redirect away from admin
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

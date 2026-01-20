@@ -47,8 +47,9 @@ interface Invite {
 
 export default function AdminInvitesPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [invites, setInvites] = useState<Invite[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -62,10 +63,36 @@ export default function AdminInvitesPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchInvites()
-  }, [communityId])
+    initializePage()
+  }, [communitySlug])
 
-  const fetchInvites = async () => {
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // First fetch community to get the ID
+    let communityQuery = supabase
+      .from('communities')
+      .select('id')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (community) {
+      setCommunityId(community.id)
+      fetchInvites(community.id)
+    } else {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchInvites = async (cId: string) => {
     setIsLoading(true)
     try {
       const { data, error } = await supabase
@@ -82,11 +109,18 @@ export default function AdminInvitesPage() {
             display_name
           )
         `)
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setInvites(data || [])
+      // Transform the data to match our interface (Supabase returns created_by as array)
+      const transformedData = (data || []).map(invite => ({
+        ...invite,
+        created_by: Array.isArray(invite.created_by)
+          ? invite.created_by[0] || null
+          : invite.created_by
+      }))
+      setInvites(transformedData)
     } catch (err) {
       console.error('Failed to fetch invites:', err)
       toast.error('Failed to load invites')
@@ -105,6 +139,8 @@ export default function AdminInvitesPage() {
   }
 
   const handleCreate = async () => {
+    if (!communityId) return
+
     setIsCreating(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -148,7 +184,7 @@ export default function AdminInvitesPage() {
       setInviteEmail('')
       setMaxUses('1')
       setExpiresInDays('7')
-      fetchInvites()
+      fetchInvites(communityId)
     } catch (err) {
       console.error('Failed to create invite:', err)
       toast.error('Failed to create invite')
@@ -195,7 +231,7 @@ export default function AdminInvitesPage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/admin`}
+          href={`/c/${communitySlug}/admin`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

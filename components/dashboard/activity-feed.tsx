@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
@@ -67,142 +67,159 @@ const activityLabels: Record<ActivityItem['type'], string> = {
 export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const isMountedRef = useRef(true)
   const supabase = createClient()
 
   useEffect(() => {
-    fetchActivity()
-  }, [communityId])
+    isMountedRef.current = true
 
-  const fetchActivity = async () => {
-    setIsLoading(true)
-    try {
-      const allActivities: ActivityItem[] = []
+    const fetchActivity = async () => {
+      if (isMountedRef.current) setIsLoading(true)
+      try {
+        const allActivities: ActivityItem[] = []
 
-      // Fetch recent items
-      const { data: items } = await supabase
-        .from('items')
-        .select(`
-          id,
-          name,
-          created_at,
-          owner:owner_id (
+        // Fetch recent items
+        const { data: items } = await supabase
+          .from('items')
+          .select(`
             id,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('community_id', communityId)
-        .order('created_at', { ascending: false })
-        .limit(limit)
+            name,
+            created_at,
+            owner:owner_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('community_id', communityId)
+          .order('created_at', { ascending: false })
+          .limit(limit)
 
-      items?.forEach((item) => {
-        const owner = item.owner as any
-        allActivities.push({
-          id: `item-${item.id}`,
-          type: 'item_added',
-          title: item.name,
-          href: `/c/${communityId}/items/${item.id}`,
-          timestamp: item.created_at,
-          actor: owner,
+        if (!isMountedRef.current) return
+
+        items?.forEach((item) => {
+          const owner = item.owner as any
+          allActivities.push({
+            id: `item-${item.id}`,
+            type: 'item_added',
+            title: item.name,
+            href: `/c/${communityId}/items/${item.id}`,
+            timestamp: item.created_at,
+            actor: owner,
+          })
         })
-      })
 
-      // Fetch recent events
-      const { data: events } = await supabase
-        .from('events')
-        .select(`
-          id,
-          title,
-          created_at,
-          organizer:organizer_id (
+        // Fetch recent events
+        const { data: events } = await supabase
+          .from('events')
+          .select(`
             id,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('community_id', communityId)
-        .neq('status', 'draft')
-        .order('created_at', { ascending: false })
-        .limit(limit)
+            title,
+            created_at,
+            organizer:organizer_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('community_id', communityId)
+          .neq('status', 'draft')
+          .order('created_at', { ascending: false })
+          .limit(limit)
 
-      events?.forEach((event) => {
-        const organizer = event.organizer as any
-        allActivities.push({
-          id: `event-${event.id}`,
-          type: 'event_created',
-          title: event.title,
-          href: `/c/${communityId}/calendar/${event.id}`,
-          timestamp: event.created_at,
-          actor: organizer,
+        if (!isMountedRef.current) return
+
+        events?.forEach((event) => {
+          const organizer = event.organizer as any
+          allActivities.push({
+            id: `event-${event.id}`,
+            type: 'event_created',
+            title: event.title,
+            href: `/c/${communityId}/calendar/${event.id}`,
+            timestamp: event.created_at,
+            actor: organizer,
+          })
         })
-      })
 
-      // Fetch recent news
-      const { data: news } = await supabase
-        .from('news')
-        .select(`
-          id,
-          title,
-          published_at,
-          author:author_id (
+        // Fetch recent news
+        const { data: news } = await supabase
+          .from('news')
+          .select(`
             id,
-            display_name,
-            avatar_url
-          )
-        `)
-        .eq('community_id', communityId)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
-        .limit(limit)
+            title,
+            published_at,
+            author:author_id (
+              id,
+              display_name,
+              avatar_url
+            )
+          `)
+          .eq('community_id', communityId)
+          .eq('status', 'published')
+          .order('published_at', { ascending: false })
+          .limit(limit)
 
-      news?.forEach((article) => {
-        const author = article.author as any
-        allActivities.push({
-          id: `news-${article.id}`,
-          type: 'news_published',
-          title: article.title,
-          href: `/c/${communityId}/news/${article.id}`,
-          timestamp: article.published_at,
-          actor: author,
+        if (!isMountedRef.current) return
+
+        news?.forEach((article) => {
+          const author = article.author as any
+          allActivities.push({
+            id: `news-${article.id}`,
+            type: 'news_published',
+            title: article.title,
+            href: `/c/${communityId}/news/${article.id}`,
+            timestamp: article.published_at,
+            actor: author,
+          })
         })
-      })
 
-      // Fetch recent members
-      const { data: members } = await supabase
-        .from('community_members')
-        .select('id, display_name, avatar_url, joined_at')
-        .eq('community_id', communityId)
-        .eq('status', 'active')
-        .order('joined_at', { ascending: false })
-        .limit(limit)
+        // Fetch recent members
+        const { data: members } = await supabase
+          .from('community_members')
+          .select('id, display_name, avatar_url, joined_at')
+          .eq('community_id', communityId)
+          .eq('status', 'active')
+          .order('joined_at', { ascending: false })
+          .limit(limit)
 
-      members?.forEach((member) => {
-        allActivities.push({
-          id: `member-${member.id}`,
-          type: 'member_joined',
-          title: member.display_name || 'New member',
-          href: `/c/${communityId}/members/${member.id}`,
-          timestamp: member.joined_at,
-          actor: {
-            id: member.id,
-            display_name: member.display_name,
-            avatar_url: member.avatar_url,
-          },
+        if (!isMountedRef.current) return
+
+        members?.forEach((member) => {
+          allActivities.push({
+            id: `member-${member.id}`,
+            type: 'member_joined',
+            title: member.display_name || 'New member',
+            href: `/c/${communityId}/members/${member.id}`,
+            timestamp: member.joined_at,
+            actor: {
+              id: member.id,
+              display_name: member.display_name,
+              avatar_url: member.avatar_url,
+            },
+          })
         })
-      })
 
-      // Sort by timestamp and limit
-      allActivities.sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      )
+        // Sort by timestamp and limit
+        allActivities.sort((a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
 
-      setActivities(allActivities.slice(0, limit))
-    } catch {
-      // Silently fail - tables may not exist yet
-    } finally {
-      setIsLoading(false)
+        if (isMountedRef.current) {
+          setActivities(allActivities.slice(0, limit))
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
+      } finally {
+        if (isMountedRef.current) setIsLoading(false)
+      }
     }
-  }
+
+    fetchActivity()
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [communityId, limit, supabase])
 
   const getInitials = (name: string | null) => {
     if (!name) return '?'
@@ -250,7 +267,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={activity.actor?.avatar_url || undefined} />
                   <AvatarFallback>
-                    {getInitials(activity.actor?.display_name)}
+                    {getInitials(activity.actor?.display_name ?? null)}
                   </AvatarFallback>
                 </Avatar>
               ) : (

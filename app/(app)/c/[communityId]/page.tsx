@@ -34,35 +34,47 @@ export default async function CommunityDashboard({ params }: Props) {
     redirect('/login')
   }
 
-  // Verify membership and get community
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communityId)
+
+  // First, find community by slug or ID
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, name, slug, description, type, logo_url, plan')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communityId},id.eq.${communityId}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communityId)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect to canonical slug URL if accessed by ID
+  if (communityId !== community.slug && communityId === community.id) {
+    redirect(`/c/${community.slug}`)
+  }
+
+  // Verify membership
   const { data: membership } = await supabase
     .from('community_members')
-    .select(`
-      id,
-      role,
-      display_name,
-      joined_at,
-      community:communities (
-        id,
-        name,
-        slug,
-        description,
-        type,
-        logo_url,
-        plan
-      )
-    `)
-    .eq('community_id', communityId)
+    .select('id, role, display_name, joined_at')
+    .eq('community_id', community.id)
     .eq('user_id', user.id)
     .eq('status', 'active')
     .single()
 
-  if (!membership || !membership.community) {
+  if (!membership) {
     notFound()
   }
 
-  const community = membership.community as any
   const isAdmin = membership.role === 'admin'
+  const communitySlug = community.slug
 
   // Fetch dashboard stats
   const today = new Date()
@@ -79,16 +91,16 @@ export default async function CommunityDashboard({ params }: Props) {
     supabase
       .from('community_members')
       .select('*', { count: 'exact', head: true })
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .eq('status', 'active'),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })
-      .eq('community_id', communityId),
+      .eq('community_id', community.id),
     supabase
       .from('items')
       .select('*', { count: 'exact', head: true })
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .eq('status', 'available'),
     supabase
       .from('bookings')
@@ -112,13 +124,13 @@ export default async function CommunityDashboard({ params }: Props) {
         published_at,
         author:community_members (display_name, avatar_url)
       `)
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .order('published_at', { ascending: false })
       .limit(3),
     supabase
       .from('community_members')
       .select('id, display_name, avatar_url, joined_at')
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .eq('status', 'active')
       .order('joined_at', { ascending: false })
       .limit(5),
@@ -153,7 +165,7 @@ export default async function CommunityDashboard({ params }: Props) {
         </div>
         {isAdmin && (
           <Button variant="outline" asChild>
-            <Link href={`/c/${communityId}/admin`}>
+            <Link href={`/c/${communitySlug}/admin`}>
               Admin Settings
             </Link>
           </Button>
@@ -199,20 +211,20 @@ export default async function CommunityDashboard({ params }: Props) {
         <h3 className="font-semibold mb-3">Quick Actions</h3>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" asChild>
-            <Link href={`/c/${communityId}/items/new`}>
+            <Link href={`/c/${communitySlug}/items/new`}>
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
-            <Link href={`/c/${communityId}/calendar`}>
+            <Link href={`/c/${communitySlug}/calendar`}>
               <Calendar className="mr-2 h-4 w-4" />
               Book Resource
             </Link>
           </Button>
           {(isAdmin || membership.role === 'moderator') && (
             <Button size="sm" variant="outline" asChild>
-              <Link href={`/c/${communityId}/news/new`}>
+              <Link href={`/c/${communitySlug}/news/new`}>
                 <Newspaper className="mr-2 h-4 w-4" />
                 Post News
               </Link>
@@ -228,7 +240,7 @@ export default async function CommunityDashboard({ params }: Props) {
             title="Upcoming Bookings"
             action={
               <Button variant="ghost" size="sm" asChild>
-                <Link href={`/c/${communityId}/calendar`}>
+                <Link href={`/c/${communitySlug}/calendar`}>
                   View all
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -275,7 +287,7 @@ export default async function CommunityDashboard({ params }: Props) {
             title="Recent News"
             action={
               <Button variant="ghost" size="sm" asChild>
-                <Link href={`/c/${communityId}/news`}>
+                <Link href={`/c/${communitySlug}/news`}>
                   View all
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -288,7 +300,7 @@ export default async function CommunityDashboard({ params }: Props) {
                 {recentNews.map((post: any) => (
                   <Link
                     key={post.id}
-                    href={`/c/${communityId}/news/${post.id}`}
+                    href={`/c/${communitySlug}/news/${post.id}`}
                     className="p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors block"
                   >
                     <Avatar className="h-8 w-8">
@@ -324,10 +336,7 @@ export default async function CommunityDashboard({ params }: Props) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Activity Feed */}
         <div className="lg:col-span-2">
-          <SectionHeader
-            title="Recent Activity"
-            icon={<Activity className="h-5 w-5" />}
-          />
+          <SectionHeader title="Recent Activity" />
           <ActivityFeed communityId={communityId} limit={8} />
         </div>
 
@@ -337,7 +346,7 @@ export default async function CommunityDashboard({ params }: Props) {
             title="New Members"
             action={
               <Button variant="ghost" size="sm" asChild>
-                <Link href={`/c/${communityId}/members`}>
+                <Link href={`/c/${communitySlug}/members`}>
                   View all
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -350,7 +359,7 @@ export default async function CommunityDashboard({ params }: Props) {
                 {recentMembers.map((member: any) => (
                   <Link
                     key={member.id}
-                    href={`/c/${communityId}/members/${member.id}`}
+                    href={`/c/${communitySlug}/members/${member.id}`}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <Avatar>

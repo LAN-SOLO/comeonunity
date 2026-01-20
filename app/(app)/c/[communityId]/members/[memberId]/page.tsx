@@ -50,12 +50,38 @@ const skillLabels: Record<string, string> = {
 }
 
 export default async function MemberProfilePage({ params }: Props) {
-  const { communityId, memberId } = await params
+  const { communityId: communitySlug, memberId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/login')
+  }
+
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  // Get community by slug or ID
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect to slug URL if accessed by ID
+  if (communitySlug !== community.slug && communitySlug === community.id) {
+    redirect(`/c/${community.slug}/members/${memberId}`)
   }
 
   // Get member profile
@@ -84,7 +110,7 @@ export default async function MemberProfilePage({ params }: Props) {
         )
       `)
       .eq('id', memberId)
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .eq('status', 'active')
       .single()
     member = data
@@ -106,7 +132,7 @@ export default async function MemberProfilePage({ params }: Props) {
       .from('items')
       .select('id, name, category, status, images')
       .eq('owner_id', memberId)
-      .eq('community_id', communityId)
+      .eq('community_id', community.id)
       .limit(6)
     items = data
   } catch {
@@ -129,7 +155,7 @@ export default async function MemberProfilePage({ params }: Props) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/members`}
+          href={`/c/${community.slug}/members`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -176,7 +202,7 @@ export default async function MemberProfilePage({ params }: Props) {
 
               {isOwnProfile && (
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/c/${communityId}/members/${memberId}/edit`}>
+                  <Link href={`/c/${community.slug}/members/${memberId}/edit`}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
                   </Link>
@@ -248,7 +274,7 @@ export default async function MemberProfilePage({ params }: Props) {
             title="Items for Lending"
             action={
               <Button variant="ghost" size="sm" asChild>
-                <Link href={`/c/${communityId}/items?owner=${memberId}`}>
+                <Link href={`/c/${community.slug}/items?owner=${memberId}`}>
                   View all
                 </Link>
               </Button>
@@ -256,7 +282,7 @@ export default async function MemberProfilePage({ params }: Props) {
           />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
             {items.map((item: any) => (
-              <Link key={item.id} href={`/c/${communityId}/items/${item.id}`}>
+              <Link key={item.id} href={`/c/${community.slug}/items/${item.id}`}>
                 <Card className="p-3 hover:shadow-md transition-shadow">
                   <div className="aspect-square rounded-lg bg-muted mb-2 flex items-center justify-center overflow-hidden">
                     {item.images && item.images[0] ? (
@@ -293,12 +319,12 @@ export default async function MemberProfilePage({ params }: Props) {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild>
-              <Link href={`/c/${communityId}/members/${memberId}/edit`}>
+              <Link href={`/c/${community.slug}/members/${memberId}/edit`}>
                 Add Skills
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href={`/c/${communityId}/items/new`}>
+              <Link href={`/c/${community.slug}/items/new`}>
                 List an Item
               </Link>
             </Button>

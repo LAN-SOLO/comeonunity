@@ -34,8 +34,9 @@ interface Notification {
 
 export default function NotificationsPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all')
@@ -44,8 +45,37 @@ export default function NotificationsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchNotifications()
+    initializePage()
+  }, [communitySlug])
+
+  useEffect(() => {
+    if (communityId) {
+      fetchNotifications()
+    }
   }, [communityId])
+
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // Fetch community by slug or id
+    let communityQuery = supabase
+      .from('communities')
+      .select('id, slug')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (!community) return
+
+    setCommunityId(community.id)
+  }
 
   const fetchNotifications = async () => {
     setIsLoading(true)
@@ -165,7 +195,7 @@ export default function NotificationsPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}`}
+          href={`/c/${communitySlug}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -252,7 +282,7 @@ export default function NotificationsPage() {
           <NotificationItem
             key={notification.id}
             notification={notification}
-            communityId={communityId}
+            communitySlug={communitySlug}
             onClick={() => {
               if (!notification.read) {
                 markAsRead(notification.id)

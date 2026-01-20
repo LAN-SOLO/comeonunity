@@ -14,7 +14,9 @@ import {
   Globe,
   Download,
   Trash2,
-  ChevronRight,
+  ChevronLeft,
+  Home,
+  Palette,
 } from 'lucide-react'
 
 export const metadata = {
@@ -39,6 +41,18 @@ export default async function SettingsPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-2xl mx-auto">
+      {/* Back to Home */}
+      <div className="flex items-center gap-2 mb-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          <Home className="h-4 w-4" />
+          <span className="text-sm">Home</span>
+        </Link>
+      </div>
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-1">
@@ -107,6 +121,14 @@ export default async function SettingsPage() {
       {/* Preferences Section */}
       <SectionHeader title="Preferences" />
       <Card className="mb-6 overflow-hidden">
+        <Link href="/settings/appearance">
+          <ListRow
+            icon={<Palette className="h-4 w-4" />}
+            title="Appearance"
+            subtitle="Theme and display settings"
+            showChevron
+          />
+        </Link>
         <Link href="/settings/notifications">
           <ListRow
             icon={<Bell className="h-4 w-4" />}

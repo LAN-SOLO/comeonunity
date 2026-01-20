@@ -80,8 +80,9 @@ const statusLabels: Record<string, string> = {
 
 export default function AdminMembersPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -100,22 +101,48 @@ export default function AdminMembersPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchMembers()
+    initializePage()
     getCurrentUser()
-  }, [communityId])
+  }, [communitySlug])
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUserId(user?.id || null)
   }
 
-  const fetchMembers = async () => {
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // First fetch community to get the ID
+    let communityQuery = supabase
+      .from('communities')
+      .select('id')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (community) {
+      setCommunityId(community.id)
+      fetchMembers(community.id)
+    } else {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchMembers = async (cId: string) => {
     setIsLoading(true)
     try {
       const { data, error } = await supabase
         .from('community_members')
         .select('id, display_name, avatar_url, role, status, joined_at, last_active_at, user_id')
-        .eq('community_id', communityId)
+        .eq('community_id', cId)
         .order('joined_at', { ascending: false })
 
       if (error) throw error
@@ -237,7 +264,7 @@ export default function AdminMembersPage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/admin`}
+          href={`/c/${communitySlug}/admin`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -320,7 +347,7 @@ export default function AdminMembersPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/c/${communityId}/members/${member.id}`}
+                        href={`/c/${communitySlug}/members/${member.id}`}
                         className="font-medium hover:underline truncate"
                       >
                         {member.display_name || 'Unknown'}
@@ -357,7 +384,7 @@ export default function AdminMembersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/c/${communityId}/members/${member.id}`}>
+                          <Link href={`/c/${communitySlug}/members/${member.id}`}>
                             <User className="h-4 w-4 mr-2" />
                             View Profile
                           </Link>

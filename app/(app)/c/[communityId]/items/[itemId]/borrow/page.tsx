@@ -48,9 +48,10 @@ interface Item {
 export default function BorrowRequestPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
   const itemId = params.itemId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [item, setItem] = useState<Item | null>(null)
@@ -62,11 +63,43 @@ export default function BorrowRequestPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchData()
-  }, [itemId, communityId])
+    initializePage()
+  }, [itemId, communitySlug])
 
-  const fetchData = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Fetch community by slug or id
+      let communityQuery = supabase
+        .from('communities')
+        .select('id, slug')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community, error: communityError } = await communityQuery.single()
+
+      if (communityError || !community) {
+        return
+      }
+
+      setCommunityId(community.id)
+      await fetchData(community.id)
+    } catch (err) {
+      console.error('Failed to initialize:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchData = async (actualCommunityId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -78,13 +111,13 @@ export default function BorrowRequestPage() {
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single()
 
       if (!member) {
-        router.push(`/c/${communityId}`)
+        router.push(`/c/${communitySlug}`)
         return
       }
 
@@ -110,26 +143,26 @@ export default function BorrowRequestPage() {
           )
         `)
         .eq('id', itemId)
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .single()
 
       if (error || !itemData) {
         toast.error('Item not found')
-        router.push(`/c/${communityId}/items`)
+        router.push(`/c/${communitySlug}/items`)
         return
       }
 
       // Check if item is available
       if (itemData.status !== 'available') {
         toast.error('This item is not available for borrowing')
-        router.push(`/c/${communityId}/items/${itemId}`)
+        router.push(`/c/${communitySlug}/items/${itemId}`)
         return
       }
 
       // Check if user is trying to borrow their own item
       if (itemData.owner_id === member.id) {
         toast.error("You can't borrow your own item")
-        router.push(`/c/${communityId}/items/${itemId}`)
+        router.push(`/c/${communitySlug}/items/${itemId}`)
         return
       }
 
@@ -147,8 +180,6 @@ export default function BorrowRequestPage() {
     } catch (err) {
       console.error('Failed to fetch data:', err)
       toast.error('Failed to load item')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -202,7 +233,7 @@ export default function BorrowRequestPage() {
         })
 
       toast.success('Borrow request sent!')
-      router.push(`/c/${communityId}/items/${itemId}`)
+      router.push(`/c/${communitySlug}/items/${itemId}`)
     } catch (err: any) {
       console.error('Submit failed:', err)
       toast.error(err.message || 'Failed to send request')
@@ -236,7 +267,7 @@ export default function BorrowRequestPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/items/${itemId}`}
+          href={`/c/${communitySlug}/items/${itemId}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -405,7 +436,7 @@ export default function BorrowRequestPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/c/${communityId}/items/${itemId}`)}
+            onClick={() => router.push(`/c/${communitySlug}/items/${itemId}`)}
           >
             Cancel
           </Button>

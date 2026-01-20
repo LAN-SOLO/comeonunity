@@ -15,7 +15,7 @@ interface Props {
 const PAGE_SIZE = 50
 
 export default function CommunityAuditLogsPage({ params }: Props) {
-  const { communityId } = use(params)
+  const { communityId: communitySlug } = use(params)
 
   const [logs, setLogs] = useState<AuditLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +44,7 @@ export default function CommunityAuditLogsPage({ params }: Props) {
       params.set('limit', PAGE_SIZE.toString())
 
       const res = await fetch(
-        `/api/communities/${communityId}/admin/audit-logs?${params}`
+        `/api/communities/${communitySlug}/admin/audit-logs?${params}`
       )
       const data = await res.json()
 
@@ -61,7 +61,7 @@ export default function CommunityAuditLogsPage({ params }: Props) {
 
   useEffect(() => {
     fetchLogs()
-  }, [communityId, search, actionType, resourceType, severity, dateFrom, dateTo, currentPage])
+  }, [communitySlug, search, actionType, resourceType, severity, dateFrom, dateTo, currentPage])
 
   const handleReset = () => {
     setSearch('')
@@ -80,7 +80,7 @@ export default function CommunityAuditLogsPage({ params }: Props) {
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <Link
-          href={`/c/${communityId}/admin`}
+          href={`/c/${communitySlug}/admin`}
           className="text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-5 w-5" />

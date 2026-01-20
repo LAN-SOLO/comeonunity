@@ -76,7 +76,7 @@ const colorOptions = [
 export default function CommunitySettingsPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
   const [community, setCommunity] = useState<Community | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -102,16 +102,27 @@ export default function CommunitySettingsPage() {
 
   useEffect(() => {
     fetchCommunity()
-  }, [communityId])
+  }, [communitySlug])
 
   const fetchCommunity = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Fetch by slug or ID for compatibility
+      let communityQuery = supabase
         .from('communities')
         .select('*')
-        .eq('id', communityId)
-        .single()
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data, error } = await communityQuery.single()
 
       if (error) throw error
 
@@ -167,7 +178,7 @@ export default function CommunitySettingsPage() {
           primary_color: primaryColor,
           settings,
         })
-        .eq('id', communityId)
+        .eq('id', community?.id)
 
       if (error) throw error
 
@@ -193,7 +204,7 @@ export default function CommunitySettingsPage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/admin`}
+          href={`/c/${communitySlug}/admin`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

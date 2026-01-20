@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/collapsible'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
-import { formatAuditAction, type AuditAction, type AuditSeverity } from '@/lib/security/audit'
+import { formatAuditAction, type AuditAction, type AuditSeverity } from '@/lib/security/audit-types'
 
 export interface AuditLogEntry {
   id: string

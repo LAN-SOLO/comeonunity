@@ -59,8 +59,9 @@ interface Booking {
 
 export default function MyBookingsPage() {
   const params = useParams()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
@@ -69,8 +70,37 @@ export default function MyBookingsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchBookings()
+    initializePage()
+  }, [communitySlug])
+
+  useEffect(() => {
+    if (communityId) {
+      fetchBookings()
+    }
   }, [communityId])
+
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // Fetch community by slug or id
+    let communityQuery = supabase
+      .from('communities')
+      .select('id, slug')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (!community) return
+
+    setCommunityId(community.id)
+  }
 
   const fetchBookings = async () => {
     setIsLoading(true)
@@ -200,8 +230,8 @@ export default function MyBookingsPage() {
                 <Link
                   href={
                     isResource
-                      ? `/c/${communityId}/resources/${booking.resource?.id}`
-                      : `/c/${communityId}/items/${booking.item?.id}`
+                      ? `/c/${communitySlug}/resources/${booking.resource?.id}`
+                      : `/c/${communitySlug}/items/${booking.item?.id}`
                   }
                   className="font-semibold hover:underline"
                 >
@@ -321,7 +351,7 @@ export default function MyBookingsPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/resources`}
+          href={`/c/${communitySlug}/resources`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -367,7 +397,7 @@ export default function MyBookingsPage() {
                 Book a shared space or request to borrow an item
               </p>
               <Button asChild>
-                <Link href={`/c/${communityId}/resources`}>Browse Shared Spaces</Link>
+                <Link href={`/c/${communitySlug}/resources`}>Browse Shared Spaces</Link>
               </Button>
             </Card>
           ) : (

@@ -55,9 +55,10 @@ const statuses = [
 export default function EditItemPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
   const itemId = params.itemId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -75,11 +76,43 @@ export default function EditItemPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchItem()
-  }, [itemId, communityId])
+    initializePage()
+  }, [itemId, communitySlug])
 
-  const fetchItem = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
+    try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // Fetch community by slug or id
+      let communityQuery = supabase
+        .from('communities')
+        .select('id, slug')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community, error: communityError } = await communityQuery.single()
+
+      if (communityError || !community) {
+        return
+      }
+
+      setCommunityId(community.id)
+      await fetchItem(community.id)
+    } catch (err) {
+      console.error('Failed to initialize:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchItem = async (actualCommunityId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -91,13 +124,13 @@ export default function EditItemPage() {
       const { data: member } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single()
 
       if (!member) {
-        router.push(`/c/${communityId}`)
+        router.push(`/c/${communitySlug}`)
         return
       }
 
@@ -106,19 +139,19 @@ export default function EditItemPage() {
         .from('items')
         .select('*')
         .eq('id', itemId)
-        .eq('community_id', communityId)
+        .eq('community_id', actualCommunityId)
         .single()
 
       if (error || !item) {
         toast.error('Item not found')
-        router.push(`/c/${communityId}/items`)
+        router.push(`/c/${communitySlug}/items`)
         return
       }
 
       // Verify ownership
       if (item.owner_id !== member.id) {
         toast.error('You can only edit your own items')
-        router.push(`/c/${communityId}/items/${itemId}`)
+        router.push(`/c/${communitySlug}/items/${itemId}`)
         return
       }
 
@@ -134,8 +167,6 @@ export default function EditItemPage() {
     } catch (err) {
       console.error('Failed to fetch item:', err)
       toast.error('Failed to load item')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -233,7 +264,7 @@ export default function EditItemPage() {
       if (error) throw error
 
       toast.success('Item updated successfully!')
-      router.push(`/c/${communityId}/items/${itemId}`)
+      router.push(`/c/${communitySlug}/items/${itemId}`)
     } catch (err: any) {
       console.error('Save failed:', err)
       toast.error(err.message || 'Failed to update item')
@@ -253,7 +284,7 @@ export default function EditItemPage() {
       if (error) throw error
 
       toast.success('Item deleted')
-      router.push(`/c/${communityId}/items`)
+      router.push(`/c/${communitySlug}/items`)
     } catch (err: any) {
       console.error('Delete failed:', err)
       toast.error(err.message || 'Failed to delete item')
@@ -275,7 +306,7 @@ export default function EditItemPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/items/${itemId}`}
+          href={`/c/${communitySlug}/items/${itemId}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -451,7 +482,7 @@ export default function EditItemPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/c/${communityId}/items/${itemId}`)}
+            onClick={() => router.push(`/c/${communitySlug}/items/${itemId}`)}
           >
             Cancel
           </Button>

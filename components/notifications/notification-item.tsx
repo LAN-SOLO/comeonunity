@@ -38,7 +38,7 @@ export interface NotificationItemProps {
       avatar_url: string | null
     } | null
   }
-  communityId?: string
+  communitySlug?: string
   onClick?: () => void
 }
 
@@ -70,9 +70,9 @@ const typeColors: Record<string, string> = {
   default: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400',
 }
 
-function getNotificationLink(notification: NotificationItemProps['notification'], communityId?: string): string | null {
-  const cId = communityId || notification.data?.community_id
-  if (!cId) return null
+function getNotificationLink(notification: NotificationItemProps['notification'], communitySlug?: string): string | null {
+  const cSlug = communitySlug || notification.data?.community_id
+  if (!cSlug) return null
 
   const data = notification.data || {}
 
@@ -80,25 +80,25 @@ function getNotificationLink(notification: NotificationItemProps['notification']
     case 'borrow_request':
     case 'borrow_approved':
     case 'borrow_rejected':
-      return data.item_id ? `/c/${cId}/items/${data.item_id}` : null
+      return data.item_id ? `/c/${cSlug}/items/${data.item_id}` : null
     case 'booking_request':
     case 'booking_approved':
     case 'booking_rejected':
     case 'booking_reminder':
-      return `/c/${cId}/bookings`
+      return `/c/${cSlug}/bookings`
     case 'news':
-      return data.article_id ? `/c/${cId}/news/${data.article_id}` : `/c/${cId}/news`
+      return data.article_id ? `/c/${cSlug}/news/${data.article_id}` : `/c/${cSlug}/news`
     case 'member_joined':
-      return data.member_id ? `/c/${cId}/members/${data.member_id}` : `/c/${cId}/members`
+      return data.member_id ? `/c/${cSlug}/members/${data.member_id}` : `/c/${cSlug}/members`
     default:
-      return `/c/${cId}`
+      return `/c/${cSlug}`
   }
 }
 
-export function NotificationItem({ notification, communityId, onClick }: NotificationItemProps) {
+export function NotificationItem({ notification, communitySlug, onClick }: NotificationItemProps) {
   const Icon = typeIcons[notification.type] || typeIcons.default
   const colorClass = typeColors[notification.type] || typeColors.default
-  const link = getNotificationLink(notification, communityId)
+  const link = getNotificationLink(notification, communitySlug)
 
   const actorName = notification.actor?.display_name || 'Someone'
   const actorInitials = actorName

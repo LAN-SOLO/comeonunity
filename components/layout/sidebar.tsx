@@ -17,6 +17,7 @@ import {
 import { NotificationsDropdown } from '@/components/notifications/notifications-dropdown'
 import { SearchCommand } from '@/components/search/search-command'
 import { SearchButton } from '@/components/search/search-button'
+import { ThemeToggleInline } from '@/components/theme'
 import {
   Home,
   Users,
@@ -202,6 +203,8 @@ export function Sidebar() {
                 Security
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <ThemeToggleInline />
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <form action="/api/auth/signout" method="post">

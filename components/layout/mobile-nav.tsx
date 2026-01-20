@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { useCommunity } from '@/hooks/use-community'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationsDropdown } from '@/components/notifications/notifications-dropdown'
+import { ThemeToggleInline } from '@/components/theme'
 import {
   Home,
   Users,
@@ -70,8 +71,9 @@ export function MobileNav() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
             {/* Logo */}
-            <div className="h-14 flex items-center px-6 border-b border-border">
+            <div className="h-14 flex items-center px-6 border-b border-black/20 dark:border-white/50">
               <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">C</span>
@@ -81,7 +83,7 @@ export function MobileNav() {
             </div>
 
             {/* Community Selector */}
-            <div className="p-4 border-b border-border">
+            <div className="p-4 border-b border-black/20 dark:border-white/50">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
@@ -169,7 +171,7 @@ export function MobileNav() {
             </nav>
 
             {/* User section */}
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-black/20 dark:border-white/50">
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={currentMember?.avatar_url || undefined} />
@@ -195,6 +197,9 @@ export function MobileNav() {
                   <Settings className="h-5 w-5" />
                   Settings
                 </Link>
+                <div className="px-1 py-2">
+                  <ThemeToggleInline />
+                </div>
                 <form action="/api/auth/signout" method="post">
                   <button
                     type="submit"

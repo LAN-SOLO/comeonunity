@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -53,8 +53,9 @@ const colorOptions = [
 export default function NewEventPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -71,6 +72,29 @@ export default function NewEventPage() {
   const [status, setStatus] = useState<'draft' | 'scheduled'>('scheduled')
 
   const supabase = createClient()
+
+  // Fetch community ID on mount
+  useEffect(() => {
+    const fetchCommunity = async () => {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      let communityQuery = supabase
+        .from('communities')
+        .select('id')
+        .eq('status', 'active')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community } = await communityQuery.single()
+      if (community) setCommunityId(community.id)
+    }
+    fetchCommunity()
+  }, [communitySlug])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,7 +169,7 @@ export default function NewEventPage() {
       if (error) throw error
 
       toast.success('Event created successfully')
-      router.push(`/c/${communityId}/calendar/${event.id}`)
+      router.push(`/c/${communitySlug}/calendar/${event.id}`)
     } catch (err) {
       console.error('Failed to create event:', err)
       toast.error('Failed to create event')
@@ -164,7 +188,7 @@ export default function NewEventPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/calendar`}
+          href={`/c/${communitySlug}/calendar`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

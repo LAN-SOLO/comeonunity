@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default async function CommunityLayout({ children, params }: Props) {
-  const { communityId } = await params
+  const { communityId: slugOrId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -15,11 +15,37 @@ export default async function CommunityLayout({ children, params }: Props) {
     redirect('/login')
   }
 
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId)
+
+  // Find community by slug or ID (only check ID if it looks like a UUID)
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, slug, status')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', slugOrId)
+  }
+
+  const { data: community } = await communityQuery.single()
+
+  if (!community) {
+    notFound()
+  }
+
+  // Redirect to canonical slug URL if accessed by ID
+  if (slugOrId !== community.slug && slugOrId === community.id) {
+    redirect(`/c/${community.slug}`)
+  }
+
   // Verify user is a member of this community
   const { data: membership } = await supabase
     .from('community_members')
     .select('id, status')
-    .eq('community_id', communityId)
+    .eq('community_id', community.id)
     .eq('user_id', user.id)
     .single()
 

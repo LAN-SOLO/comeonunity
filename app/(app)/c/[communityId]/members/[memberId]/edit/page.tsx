@@ -40,9 +40,10 @@ interface ProfileFormData {
 export default function EditProfilePage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
   const memberId = params.memberId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -62,12 +63,35 @@ export default function EditProfilePage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchProfile()
-  }, [memberId, communityId])
+    initializePage()
+  }, [memberId, communitySlug])
 
-  const fetchProfile = async () => {
+  const initializePage = async () => {
     setIsLoading(true)
     try {
+      // Check if the value looks like a UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+      // First fetch community to get the ID
+      let communityQuery = supabase
+        .from('communities')
+        .select('id')
+
+      if (isUUID) {
+        communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+      } else {
+        communityQuery = communityQuery.eq('slug', communitySlug)
+      }
+
+      const { data: community } = await communityQuery.single()
+
+      if (!community) {
+        router.push('/')
+        return
+      }
+
+      setCommunityId(community.id)
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
@@ -79,19 +103,19 @@ export default function EditProfilePage() {
         .from('community_members')
         .select('*')
         .eq('id', memberId)
-        .eq('community_id', communityId)
+        .eq('community_id', community.id)
         .single()
 
       if (error || !member) {
         toast.error('Profile not found')
-        router.push(`/c/${communityId}/members`)
+        router.push(`/c/${communitySlug}/members`)
         return
       }
 
       // Verify this is the user's own profile
       if (member.user_id !== user.id) {
         toast.error('You can only edit your own profile')
-        router.push(`/c/${communityId}/members/${memberId}`)
+        router.push(`/c/${communitySlug}/members/${memberId}`)
         return
       }
 
@@ -202,7 +226,7 @@ export default function EditProfilePage() {
       if (error) throw error
 
       toast.success('Profile updated')
-      router.push(`/c/${communityId}/members/${memberId}`)
+      router.push(`/c/${communitySlug}/members/${memberId}`)
     } catch (err: any) {
       console.error('Save failed:', err)
       toast.error(err.message || 'Failed to save profile')
@@ -232,7 +256,7 @@ export default function EditProfilePage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/members/${memberId}`}
+          href={`/c/${communitySlug}/members/${memberId}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -482,7 +506,7 @@ export default function EditProfilePage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push(`/c/${communityId}/members/${memberId}`)}
+            onClick={() => router.push(`/c/${communitySlug}/members/${memberId}`)}
           >
             Cancel
           </Button>

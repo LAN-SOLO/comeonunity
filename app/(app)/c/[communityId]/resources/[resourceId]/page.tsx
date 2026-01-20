@@ -79,9 +79,10 @@ const timeSlots = Array.from({ length: 24 }, (_, i) => {
 export default function ResourceDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const communityId = params.communityId as string
+  const communitySlug = params.communityId as string
   const resourceId = params.resourceId as string
 
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [resource, setResource] = useState<Resource | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -99,8 +100,37 @@ export default function ResourceDetailPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchData()
-  }, [resourceId, communityId])
+    initializePage()
+  }, [resourceId, communitySlug])
+
+  const initializePage = async () => {
+    // Check if the value looks like a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+    // Fetch community by slug or id
+    let communityQuery = supabase
+      .from('communities')
+      .select('id, slug')
+      .eq('status', 'active')
+
+    if (isUUID) {
+      communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+    } else {
+      communityQuery = communityQuery.eq('slug', communitySlug)
+    }
+
+    const { data: community } = await communityQuery.single()
+
+    if (!community) return
+
+    setCommunityId(community.id)
+  }
+
+  useEffect(() => {
+    if (communityId) {
+      fetchData()
+    }
+  }, [communityId, resourceId])
 
   useEffect(() => {
     if (resource) {
@@ -127,7 +157,7 @@ export default function ResourceDetailPage() {
         .single()
 
       if (!member) {
-        router.push(`/c/${communityId}`)
+        router.push(`/c/${communitySlug}`)
         return
       }
 
@@ -144,7 +174,7 @@ export default function ResourceDetailPage() {
 
       if (error || !resourceData) {
         toast.error('Resource not found')
-        router.push(`/c/${communityId}/resources`)
+        router.push(`/c/${communitySlug}/resources`)
         return
       }
 
@@ -293,7 +323,7 @@ export default function ResourceDetailPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communityId}/resources`}
+          href={`/c/${communitySlug}/resources`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -333,7 +363,7 @@ export default function ResourceDetailPage() {
             </div>
             {isAdmin && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/c/${communityId}/admin/resources/${resourceId}/edit`}>
+                <Link href={`/c/${communitySlug}/admin/resources/${resourceId}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Link>
