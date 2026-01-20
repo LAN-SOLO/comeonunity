@@ -59,14 +59,14 @@ export function Sidebar() {
   const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin)
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r border-border bg-card">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
       {/* Logo and Notifications */}
-      <div className="h-16 flex items-center justify-between px-6 border-b border-border">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-neutral-200 dark:border-neutral-800">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">C</span>
+          <div className="w-8 h-8 rounded bg-black dark:bg-white flex items-center justify-center">
+            <span className="text-white dark:text-black font-bold text-base">C</span>
           </div>
-          <span className="font-semibold text-lg">ComeOnUnity</span>
+          <span className="font-semibold text-base">ComeOnUnity</span>
         </Link>
         {communityIdFromPath && (
           <NotificationsDropdown communityId={communityIdFromPath} />
@@ -74,7 +74,7 @@ export function Sidebar() {
       </div>
 
       {/* Community Selector */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-between">
@@ -135,7 +135,7 @@ export function Sidebar() {
 
       {/* Search */}
       {communityIdFromPath && (
-        <div className="px-4 pb-4">
+        <div className="p-4">
           <SearchButton />
           <SearchCommand communityId={communityIdFromPath} />
         </div>
@@ -152,13 +152,13 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-black dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               </li>

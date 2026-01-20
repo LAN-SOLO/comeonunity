@@ -76,7 +76,7 @@ Available aliases:
 **Installed components:**
 - button, card, input, label
 - dropdown-menu, sheet, dialog
-- avatar
+- avatar, color-picker
 
 **Adding new components:**
 ```bash
@@ -182,6 +182,12 @@ No global state library installed. Use:
 No testing framework configured yet. Consider installing:
 - Jest + React Testing Library, or
 - Vitest + React Testing Library
+
+## Style Guide
+
+See `docs/STYLE_GUIDE.md` for design standards and component usage patterns.
+
+**Key requirement:** All color selection options must include the `ColorPicker` component from `@/components/ui/color-picker`. This applies to theme customization, category colors, branding settings, etc.
 
 ## Git Repository
 
