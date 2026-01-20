@@ -30,15 +30,11 @@ interface Member {
   phone: string | null
   show_phone: boolean
   show_email: boolean
-  email?: string
   skills: string[] | null
   skills_description: string | null
   available_for_help: boolean
   role: string
   joined_at: string
-  user: {
-    email: string
-  } | null
 }
 
 export default function MembersPage() {
@@ -109,10 +105,7 @@ export default function MembersPage() {
           skills_description,
           available_for_help,
           role,
-          joined_at,
-          user:user_id (
-            email
-          )
+          joined_at
         `)
         .eq('community_id', cId)
         .eq('status', 'active')
@@ -120,13 +113,7 @@ export default function MembersPage() {
 
       if (error) throw error
 
-      const formattedMembers = data?.map((m) => ({
-        ...m,
-        email: m.show_email ? (m.user as any)?.email : undefined,
-        user: m.user as any,
-      })) || []
-
-      setMembers(formattedMembers)
+      setMembers(data || [])
     } catch {
       // Silently fail - tables may not exist yet
     } finally {

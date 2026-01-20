@@ -104,10 +104,7 @@ export default async function MemberProfilePage({ params }: Props) {
         available_for_help,
         role,
         joined_at,
-        last_active_at,
-        user:user_id (
-          email
-        )
+        last_active_at
       `)
       .eq('id', memberId)
       .eq('community_id', community.id)
@@ -147,7 +144,6 @@ export default async function MemberProfilePage({ params }: Props) {
     .toUpperCase()
     .slice(0, 2)
 
-  const email = member.show_email ? (member.user as any)?.email : null
   const phone = member.show_phone ? member.phone : null
 
   return (
@@ -226,24 +222,14 @@ export default async function MemberProfilePage({ params }: Props) {
         )}
 
         {/* Contact buttons */}
-        {(email || phone) && !isOwnProfile && (
+        {phone && !isOwnProfile && (
           <div className="mt-6 pt-6 border-t border-border flex flex-wrap gap-3">
-            {email && (
-              <Button asChild>
-                <a href={`mailto:${email}`}>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Send Email
-                </a>
-              </Button>
-            )}
-            {phone && (
-              <Button variant="outline" asChild>
-                <a href={`tel:${phone}`}>
-                  <Phone className="h-4 w-4 mr-2" />
-                  {phone}
-                </a>
-              </Button>
-            )}
+            <Button variant="outline" asChild>
+              <a href={`tel:${phone}`}>
+                <Phone className="h-4 w-4 mr-2" />
+                {phone}
+              </a>
+            </Button>
           </div>
         )}
       </Card>

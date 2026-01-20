@@ -103,10 +103,7 @@ export default async function ItemDetailPage({ params }: Props) {
         unit_number,
         phone,
         show_phone,
-        show_email,
-        user:user_id (
-          email
-        )
+        show_email
       )
     `)
     .eq('id', itemId)
@@ -127,7 +124,6 @@ export default async function ItemDetailPage({ params }: Props) {
     .toUpperCase()
     .slice(0, 2)
 
-  const ownerEmail = owner?.show_email ? owner?.user?.email : null
   const ownerPhone = owner?.show_phone ? owner?.phone : null
 
   // Get active booking if any
@@ -306,24 +302,14 @@ export default async function ItemDetailPage({ params }: Props) {
               </div>
             </Link>
 
-            {!isOwner && (ownerEmail || ownerPhone) && (
+            {!isOwner && ownerPhone && (
               <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2">
-                {ownerEmail && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`mailto:${ownerEmail}`}>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Email
-                    </a>
-                  </Button>
-                )}
-                {ownerPhone && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`tel:${ownerPhone}`}>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call
-                    </a>
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`tel:${ownerPhone}`}>
+                    <Phone className="h-4 w-4 mr-2" />
+                    Call
+                  </a>
+                </Button>
               </div>
             )}
           </Card>

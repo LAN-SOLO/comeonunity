@@ -53,10 +53,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           unit_number,
           phone,
           show_phone,
-          show_email,
-          user:user_id (
-            email
-          )
+          show_email
         )
       `)
       .eq('id', itemId)
@@ -77,9 +74,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       isOwner,
       owner: {
         ...owner,
-        email: owner?.show_email || isOwner ? owner?.user?.email : undefined,
         phone: owner?.show_phone || isOwner ? owner?.phone : undefined,
-        user: undefined,
       },
     }
 

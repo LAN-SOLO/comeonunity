@@ -56,10 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         available_for_help,
         role,
         joined_at,
-        last_active_at,
-        user:user_id (
-          email
-        )
+        last_active_at
       `, { count: 'exact' })
       .eq('community_id', communityId)
       .eq('status', 'active')
@@ -94,9 +91,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Process members to respect privacy settings
     const processedMembers = filteredMembers.map((member) => ({
       ...member,
-      email: member.show_email ? (member.user as any)?.email : undefined,
       phone: member.show_phone ? member.phone : undefined,
-      user: undefined, // Remove user object from response
     }))
 
     return NextResponse.json({

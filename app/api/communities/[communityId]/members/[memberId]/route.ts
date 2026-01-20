@@ -49,10 +49,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         available_for_help,
         role,
         joined_at,
-        last_active_at,
-        user:user_id (
-          email
-        )
+        last_active_at
       `)
       .eq('id', memberId)
       .eq('community_id', communityId)
@@ -69,10 +66,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Process member to respect privacy settings
     const processedMember = {
       ...member,
-      email: member.show_email || isOwnProfile ? (member.user as any)?.email : undefined,
       phone: member.show_phone || isOwnProfile ? member.phone : undefined,
       isOwnProfile,
-      user: undefined,
     }
 
     return NextResponse.json({ member: processedMember })
