@@ -1,26 +1,343 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* =====================================================
+   ComeOnUnity Apple-Inspired Design System
+   Tailwind CSS v4 Configuration
+   ===================================================== */
 
 @theme inline {
+  /* Colors from CSS variables */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Apple System Colors */
+  --color-blue: #007AFF;
+  --color-blue-dark: #0A84FF;
+  --color-green: #34C759;
+  --color-green-dark: #30D158;
+  --color-orange: #FF9500;
+  --color-orange-dark: #FF9F0A;
+  --color-red: #FF3B30;
+  --color-red-dark: #FF453A;
+  --color-purple: #AF52DE;
+  --color-purple-dark: #BF5AF2;
+  --color-teal: #5AC8FA;
+  --color-teal-dark: #64D2FF;
+  --color-pink: #FF2D55;
+  --color-yellow: #FFCC00;
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans), 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), 'SF Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* Apple Type Scale */
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.9375rem;
+  --font-size-lg: 1.0625rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.75rem;
+  --font-size-4xl: 2.125rem;
+
+  /* Border Radius - Apple continuous corners */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  /* Apple-style Shadows */
+  --shadow-apple-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-apple-md: 0 2px 4px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-apple-lg: 0 4px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-apple-xl: 0 8px 16px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.16);
+
+  /* Animation Timing */
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-apple-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Duration Scale */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  /* Sidebar */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  /* Charts */
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* =====================================================
+   CSS Variables - Light Mode (Apple-inspired)
+   ===================================================== */
+:root {
+  --radius: 0.625rem;
+
+  /* Background & Foreground */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+
+  /* Primary - Apple Blue */
+  --primary: 211 100% 50%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+
+  /* Muted */
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+
+  /* Accent */
+  --accent: 240 5% 96%;
+  --accent-foreground: 240 6% 10%;
+
+  /* Destructive - Apple Red */
+  --destructive: 4 90% 58%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border & Input */
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 211 100% 50%;
+
+  /* Charts */
+  --chart-1: 211 100% 50%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 280 68% 60%;
+  --chart-5: 199 89% 48%;
+
+  /* Sidebar */
+  --sidebar: 0 0% 98%;
+  --sidebar-foreground: 0 0% 0%;
+  --sidebar-primary: 211 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 5% 96%;
+  --sidebar-accent-foreground: 240 6% 10%;
+  --sidebar-border: 240 6% 90%;
+  --sidebar-ring: 211 100% 50%;
+}
+
+/* =====================================================
+   CSS Variables - Dark Mode (Apple-inspired)
+   ===================================================== */
+.dark {
+  /* Background & Foreground */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+
+  /* Card */
+  --card: 240 6% 10%;
+  --card-foreground: 0 0% 100%;
+
+  /* Popover */
+  --popover: 240 6% 10%;
+  --popover-foreground: 0 0% 100%;
+
+  /* Primary - Apple Blue (Dark) */
+  --primary: 211 100% 50%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary */
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 100%;
+
+  /* Muted */
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 65%;
+
+  /* Accent */
+  --accent: 240 4% 16%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive */
+  --destructive: 4 90% 58%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border & Input */
+  --border: 240 4% 16%;
+  --input: 240 4% 16%;
+  --ring: 211 100% 50%;
+
+  /* Charts */
+  --chart-1: 211 100% 55%;
+  --chart-2: 142 71% 50%;
+  --chart-3: 38 92% 55%;
+  --chart-4: 280 68% 65%;
+  --chart-5: 199 89% 53%;
+
+  /* Sidebar */
+  --sidebar: 240 6% 10%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 211 100% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 4% 16%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 240 4% 16%;
+  --sidebar-ring: 211 100% 55%;
+}
+
+/* =====================================================
+   Base Layer
+   ===================================================== */
+@layer base {
+  * {
+    @apply border-neutral-200 dark:border-neutral-800;
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Premium subtle gradient backgrounds */
+  .bg-premium {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  }
+
+  .dark .bg-premium {
+    background: linear-gradient(180deg, #0a0a0a 0%, #171717 100%);
+  }
+
+  /* Refined heading styles */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Better link styles */
+  a {
+    @apply transition-colors duration-200;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* =====================================================
+   Custom Utilities
+   ===================================================== */
+@layer utilities {
+  /* Apple-style focus ring */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Apple-style button press effect */
+  .press-effect {
+    @apply transition-transform duration-100 active:scale-[0.98];
+  }
+
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* =====================================================
+   Animation Keyframes
+   ===================================================== */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* =====================================================
+   Reduced Motion Support
+   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-up {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

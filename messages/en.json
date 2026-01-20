@@ -1,0 +1,204 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "viewAll": "View all",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "noResults": "No results found",
+    "error": "An error occurred",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "signup": "Sign up",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset password",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "verifyEmail": "Verify your email",
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "enable": "Enable 2FA",
+      "disable": "Disable 2FA",
+      "verify": "Verify",
+      "code": "Verification code",
+      "scanQR": "Scan this QR code with your authenticator app",
+      "enterCode": "Enter the 6-digit code from your app",
+      "backupCodes": "Backup codes",
+      "saveBackupCodes": "Save these backup codes in a safe place"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "communities": "Communities",
+    "items": "Items",
+    "calendar": "Calendar",
+    "news": "News",
+    "members": "Members",
+    "resources": "Resources",
+    "bookings": "Bookings",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "community": {
+    "title": "Community",
+    "create": "Create Community",
+    "join": "Join Community",
+    "leave": "Leave Community",
+    "settings": "Community Settings",
+    "members": "Members",
+    "invites": "Invites",
+    "name": "Community name",
+    "description": "Description",
+    "slug": "URL slug",
+    "plan": {
+      "free": "Free",
+      "pro": "Pro",
+      "premium": "Premium"
+    },
+    "role": {
+      "admin": "Admin",
+      "moderator": "Moderator",
+      "member": "Member"
+    },
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "pending": "Pending"
+    }
+  },
+  "items": {
+    "title": "Items",
+    "addItem": "Add Item",
+    "myItems": "My Items",
+    "borrowed": "Borrowed",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "borrow": "Borrow",
+    "return": "Return",
+    "borrowRequest": "Borrow Request",
+    "category": "Category",
+    "condition": "Condition",
+    "owner": "Owner",
+    "status": {
+      "available": "Available",
+      "borrowed": "Borrowed",
+      "unavailable": "Unavailable",
+      "reserved": "Reserved"
+    }
+  },
+  "events": {
+    "title": "Events",
+    "createEvent": "Create Event",
+    "upcomingEvents": "Upcoming Events",
+    "pastEvents": "Past Events",
+    "rsvp": "RSVP",
+    "attending": "Attending",
+    "notAttending": "Not Attending",
+    "maybe": "Maybe",
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "description": "Description",
+    "attendees": "Attendees"
+  },
+  "news": {
+    "title": "News",
+    "createNews": "Post News",
+    "readMore": "Read more",
+    "publishedAt": "Published",
+    "by": "by"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "new": "New"
+  },
+  "admin": {
+    "title": "Admin",
+    "dashboard": "Dashboard",
+    "platformAdmin": "Platform Admin",
+    "users": "Users",
+    "communities": "Communities",
+    "auditLogs": "Audit Logs",
+    "reports": "Reports",
+    "settings": "Settings",
+    "suspend": "Suspend",
+    "activate": "Activate",
+    "changeRole": "Change Role",
+    "viewLogs": "View Logs",
+    "stats": {
+      "totalUsers": "Total Users",
+      "activeUsers": "Active Users",
+      "totalCommunities": "Communities",
+      "pendingReports": "Pending Reports"
+    }
+  },
+  "moderation": {
+    "title": "Moderation",
+    "report": "Report",
+    "reportContent": "Report Content",
+    "reason": "Reason",
+    "description": "Description",
+    "submitReport": "Submit Report",
+    "resolve": "Resolve",
+    "dismiss": "Dismiss",
+    "startReview": "Start Review",
+    "resolutionNotes": "Resolution Notes",
+    "reasons": {
+      "spam": "Spam",
+      "harassment": "Harassment",
+      "inappropriate": "Inappropriate Content",
+      "dangerous": "Dangerous/Harmful",
+      "other": "Other"
+    },
+    "status": {
+      "pending": "Pending",
+      "reviewing": "Reviewing",
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "security": "Security",
+    "notifications": "Notifications",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark Mode",
+    "emailNotifications": "Email Notifications",
+    "pushNotifications": "Push Notifications"
+  },
+  "errors": {
+    "unauthorized": "You are not authorized to perform this action",
+    "notFound": "The requested resource was not found",
+    "serverError": "An unexpected error occurred",
+    "networkError": "Network error. Please check your connection",
+    "validationError": "Please check the form for errors"
+  }
+}

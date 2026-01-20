@@ -54,8 +54,7 @@ export async function updateSession(request: NextRequest) {
   try {
     const result = await withTimeout(supabase.auth.getUser(), 5000)
     user = result?.data?.user ?? null
-  } catch (error) {
-    console.error('Middleware auth check failed:', error)
+  } catch {
     // Continue without user on error - let the page handle auth
   }
 

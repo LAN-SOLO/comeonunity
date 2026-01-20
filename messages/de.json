@@ -1,0 +1,204 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filter",
+    "reset": "Zurücksetzen",
+    "confirm": "Bestätigen",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "submit": "Absenden",
+    "viewAll": "Alle anzeigen",
+    "showMore": "Mehr anzeigen",
+    "showLess": "Weniger anzeigen",
+    "noResults": "Keine Ergebnisse gefunden",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg",
+    "warning": "Warnung",
+    "info": "Information"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "signup": "Registrieren",
+    "forgotPassword": "Passwort vergessen?",
+    "resetPassword": "Passwort zurücksetzen",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "rememberMe": "Angemeldet bleiben",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits ein Konto?",
+    "verifyEmail": "E-Mail bestätigen",
+    "twoFactor": {
+      "title": "Zwei-Faktor-Authentifizierung",
+      "enable": "2FA aktivieren",
+      "disable": "2FA deaktivieren",
+      "verify": "Verifizieren",
+      "code": "Verifizierungscode",
+      "scanQR": "Scannen Sie diesen QR-Code mit Ihrer Authenticator-App",
+      "enterCode": "Geben Sie den 6-stelligen Code aus Ihrer App ein",
+      "backupCodes": "Backup-Codes",
+      "saveBackupCodes": "Speichern Sie diese Backup-Codes an einem sicheren Ort"
+    }
+  },
+  "nav": {
+    "home": "Startseite",
+    "communities": "Gemeinschaften",
+    "items": "Gegenstände",
+    "calendar": "Kalender",
+    "news": "Neuigkeiten",
+    "members": "Mitglieder",
+    "resources": "Ressourcen",
+    "bookings": "Buchungen",
+    "notifications": "Benachrichtigungen",
+    "settings": "Einstellungen",
+    "admin": "Admin"
+  },
+  "community": {
+    "title": "Gemeinschaft",
+    "create": "Gemeinschaft erstellen",
+    "join": "Gemeinschaft beitreten",
+    "leave": "Gemeinschaft verlassen",
+    "settings": "Gemeinschaftseinstellungen",
+    "members": "Mitglieder",
+    "invites": "Einladungen",
+    "name": "Name der Gemeinschaft",
+    "description": "Beschreibung",
+    "slug": "URL-Slug",
+    "plan": {
+      "free": "Kostenlos",
+      "pro": "Pro",
+      "premium": "Premium"
+    },
+    "role": {
+      "admin": "Admin",
+      "moderator": "Moderator",
+      "member": "Mitglied"
+    },
+    "status": {
+      "active": "Aktiv",
+      "suspended": "Gesperrt",
+      "pending": "Ausstehend"
+    }
+  },
+  "items": {
+    "title": "Gegenstände",
+    "addItem": "Gegenstand hinzufügen",
+    "myItems": "Meine Gegenstände",
+    "borrowed": "Ausgeliehen",
+    "available": "Verfügbar",
+    "unavailable": "Nicht verfügbar",
+    "borrow": "Ausleihen",
+    "return": "Zurückgeben",
+    "borrowRequest": "Ausleihanfrage",
+    "category": "Kategorie",
+    "condition": "Zustand",
+    "owner": "Besitzer",
+    "status": {
+      "available": "Verfügbar",
+      "borrowed": "Ausgeliehen",
+      "unavailable": "Nicht verfügbar",
+      "reserved": "Reserviert"
+    }
+  },
+  "events": {
+    "title": "Veranstaltungen",
+    "createEvent": "Veranstaltung erstellen",
+    "upcomingEvents": "Kommende Veranstaltungen",
+    "pastEvents": "Vergangene Veranstaltungen",
+    "rsvp": "Teilnahme",
+    "attending": "Teilnehmen",
+    "notAttending": "Nicht teilnehmen",
+    "maybe": "Vielleicht",
+    "date": "Datum",
+    "time": "Uhrzeit",
+    "location": "Ort",
+    "description": "Beschreibung",
+    "attendees": "Teilnehmer"
+  },
+  "news": {
+    "title": "Neuigkeiten",
+    "createNews": "Neuigkeit veröffentlichen",
+    "readMore": "Weiterlesen",
+    "publishedAt": "Veröffentlicht",
+    "by": "von"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "empty": "Keine Benachrichtigungen",
+    "new": "Neu"
+  },
+  "admin": {
+    "title": "Admin",
+    "dashboard": "Dashboard",
+    "platformAdmin": "Plattform-Admin",
+    "users": "Benutzer",
+    "communities": "Gemeinschaften",
+    "auditLogs": "Audit-Protokolle",
+    "reports": "Meldungen",
+    "settings": "Einstellungen",
+    "suspend": "Sperren",
+    "activate": "Aktivieren",
+    "changeRole": "Rolle ändern",
+    "viewLogs": "Protokolle anzeigen",
+    "stats": {
+      "totalUsers": "Benutzer gesamt",
+      "activeUsers": "Aktive Benutzer",
+      "totalCommunities": "Gemeinschaften",
+      "pendingReports": "Offene Meldungen"
+    }
+  },
+  "moderation": {
+    "title": "Moderation",
+    "report": "Melden",
+    "reportContent": "Inhalt melden",
+    "reason": "Grund",
+    "description": "Beschreibung",
+    "submitReport": "Meldung absenden",
+    "resolve": "Lösen",
+    "dismiss": "Ablehnen",
+    "startReview": "Prüfung starten",
+    "resolutionNotes": "Lösungsnotizen",
+    "reasons": {
+      "spam": "Spam",
+      "harassment": "Belästigung",
+      "inappropriate": "Unangemessener Inhalt",
+      "dangerous": "Gefährlich/Schädlich",
+      "other": "Sonstiges"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "reviewing": "In Prüfung",
+      "resolved": "Gelöst",
+      "dismissed": "Abgelehnt"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "profile": "Profil",
+    "account": "Konto",
+    "security": "Sicherheit",
+    "notifications": "Benachrichtigungen",
+    "language": "Sprache",
+    "theme": "Design",
+    "darkMode": "Dunkelmodus",
+    "emailNotifications": "E-Mail-Benachrichtigungen",
+    "pushNotifications": "Push-Benachrichtigungen"
+  },
+  "errors": {
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen",
+    "notFound": "Die angeforderte Ressource wurde nicht gefunden",
+    "serverError": "Ein unerwarteter Fehler ist aufgetreten",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung",
+    "validationError": "Bitte überprüfen Sie das Formular auf Fehler"
+  }
+}
