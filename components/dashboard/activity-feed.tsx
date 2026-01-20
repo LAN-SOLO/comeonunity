@@ -33,7 +33,7 @@ interface ActivityItem {
 }
 
 interface ActivityFeedProps {
-  communityId: string
+  communitySlug: string
   limit?: number
 }
 
@@ -64,9 +64,10 @@ const activityLabels: Record<ActivityItem['type'], string> = {
   borrow_request: 'requested to borrow',
 }
 
-export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
+export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [communityId, setCommunityId] = useState<string | null>(null)
   const isMountedRef = useRef(true)
   const supabase = createClient()
 
@@ -76,6 +77,30 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
     const fetchActivity = async () => {
       if (isMountedRef.current) setIsLoading(true)
       try {
+        // First resolve slug to community ID
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+        let communityQuery = supabase
+          .from('communities')
+          .select('id')
+          .eq('status', 'active')
+
+        if (isUUID) {
+          communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+        } else {
+          communityQuery = communityQuery.eq('slug', communitySlug)
+        }
+
+        const { data: community } = await communityQuery.single()
+
+        if (!community || !isMountedRef.current) {
+          setIsLoading(false)
+          return
+        }
+
+        const cId = community.id
+        setCommunityId(cId)
+
         const allActivities: ActivityItem[] = []
 
         // Fetch recent items
@@ -91,7 +116,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
               avatar_url
             )
           `)
-          .eq('community_id', communityId)
+          .eq('community_id', cId)
           .order('created_at', { ascending: false })
           .limit(limit)
 
@@ -103,7 +128,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
             id: `item-${item.id}`,
             type: 'item_added',
             title: item.name,
-            href: `/c/${communityId}/items/${item.id}`,
+            href: `/c/${communitySlug}/items/${item.id}`,
             timestamp: item.created_at,
             actor: owner,
           })
@@ -122,7 +147,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
               avatar_url
             )
           `)
-          .eq('community_id', communityId)
+          .eq('community_id', cId)
           .neq('status', 'draft')
           .order('created_at', { ascending: false })
           .limit(limit)
@@ -135,7 +160,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
             id: `event-${event.id}`,
             type: 'event_created',
             title: event.title,
-            href: `/c/${communityId}/calendar/${event.id}`,
+            href: `/c/${communitySlug}/calendar/${event.id}`,
             timestamp: event.created_at,
             actor: organizer,
           })
@@ -154,7 +179,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
               avatar_url
             )
           `)
-          .eq('community_id', communityId)
+          .eq('community_id', cId)
           .eq('status', 'published')
           .order('published_at', { ascending: false })
           .limit(limit)
@@ -167,7 +192,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
             id: `news-${article.id}`,
             type: 'news_published',
             title: article.title,
-            href: `/c/${communityId}/news/${article.id}`,
+            href: `/c/${communitySlug}/news/${article.id}`,
             timestamp: article.published_at,
             actor: author,
           })
@@ -177,7 +202,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
         const { data: members } = await supabase
           .from('community_members')
           .select('id, display_name, avatar_url, joined_at')
-          .eq('community_id', communityId)
+          .eq('community_id', cId)
           .eq('status', 'active')
           .order('joined_at', { ascending: false })
           .limit(limit)
@@ -189,7 +214,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
             id: `member-${member.id}`,
             type: 'member_joined',
             title: member.display_name || 'New member',
-            href: `/c/${communityId}/members/${member.id}`,
+            href: `/c/${communitySlug}/members/${member.id}`,
             timestamp: member.joined_at,
             actor: {
               id: member.id,
@@ -219,7 +244,7 @@ export function ActivityFeed({ communityId, limit = 10 }: ActivityFeedProps) {
     return () => {
       isMountedRef.current = false
     }
-  }, [communityId, limit, supabase])
+  }, [communitySlug, limit, supabase])
 
   const getInitials = (name: string | null) => {
     if (!name) return '?'

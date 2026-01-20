@@ -337,7 +337,7 @@ export default async function CommunityDashboard({ params }: Props) {
         {/* Activity Feed */}
         <div className="lg:col-span-2">
           <SectionHeader title="Recent Activity" />
-          <ActivityFeed communityId={communityId} limit={8} />
+          <ActivityFeed communitySlug={communitySlug} limit={8} />
         </div>
 
         {/* New Members */}
