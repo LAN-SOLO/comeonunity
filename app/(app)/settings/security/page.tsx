@@ -72,19 +72,9 @@ export default function SecuritySettingsPage() {
         return
       }
 
-      // Get profile - handle missing columns gracefully
-      try {
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('totp_enabled, require_2fa, last_password_change')
-          .eq('id', user.id)
-          .single()
-
-        setProfile(profileData || { totp_enabled: false })
-      } catch {
-        // Columns may not exist yet - use defaults
-        setProfile({ totp_enabled: false })
-      }
+      // Security features require database migration - use defaults for now
+      // TODO: Enable after running migrations to add totp_enabled, require_2fa, etc.
+      setProfile({ totp_enabled: false, require_2fa: false })
 
       // Get sessions
       try {
