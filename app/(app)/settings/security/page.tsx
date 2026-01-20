@@ -30,7 +30,6 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Home,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -194,20 +193,14 @@ export default function SecuritySettingsPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      {/* Mobile back link */}
+      <div className="md:hidden mb-6">
         <Link
           href="/settings"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Settings
-        </Link>
-        <Link
-          href="/"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Home className="h-4 w-4" />
-          <span>Home</span>
         </Link>
       </div>
 
