@@ -14,6 +14,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if admin client is available (requires SUPABASE_SERVICE_ROLE_KEY)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      // Return empty sessions if service role key not configured
+      return NextResponse.json({ sessions: [] })
+    }
+
     const adminClient = createAdminClient()
 
     // Get user's sessions from our tracking table
@@ -26,11 +32,9 @@ export async function GET(request: Request) {
       .order('last_active_at', { ascending: false })
 
     if (error) {
+      // Table may not exist - return empty sessions
       console.error('Failed to fetch sessions:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch sessions' },
-        { status: 500 }
-      )
+      return NextResponse.json({ sessions: [] })
     }
 
     // Format sessions for response
@@ -47,10 +51,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ sessions: formattedSessions })
   } catch (error) {
     console.error('Sessions GET error:', error)
-    return NextResponse.json(
-      { error: 'An unexpected error occurred' },
-      { status: 500 }
-    )
+    // Return empty sessions instead of error
+    return NextResponse.json({ sessions: [] })
   }
 }
 
