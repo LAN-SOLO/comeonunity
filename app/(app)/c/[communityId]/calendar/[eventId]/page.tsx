@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,11 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   ArrowLeft,
   Calendar,
-  Clock,
   MapPin,
   Users,
   Edit,
-  Share2,
   CalendarCheck,
   Wrench,
   PartyPopper,
@@ -21,9 +20,68 @@ import {
 } from 'lucide-react'
 import { format, isPast } from 'date-fns'
 import { RsvpButtons } from '@/components/events/rsvp-buttons'
+import { ShareEventButton } from '@/components/events/share-event-button'
 
 interface Props {
   params: Promise<{ communityId: string; eventId: string }>
+}
+
+// Generate metadata for share previews
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { communityId: communitySlug, eventId } = await params
+  const supabase = await createClient()
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, name, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+  if (!community) {
+    return { title: 'Event Not Found' }
+  }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('title, description, cover_image_url, starts_at, location, status')
+    .eq('id', eventId)
+    .eq('community_id', community.id)
+    .single()
+
+  if (!event || event.status === 'draft') {
+    return { title: 'Event Not Found' }
+  }
+
+  const title = `${event.title} - ${community.name}`
+  const eventDate = format(new Date(event.starts_at), 'EEEE, MMMM d, yyyy')
+  const description = event.description
+    ? `${eventDate}${event.location ? ` at ${event.location}` : ''} - ${event.description.slice(0, 150)}`
+    : `${eventDate}${event.location ? ` at ${event.location}` : ''}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      type: 'website',
+      images: event.cover_image_url ? [{ url: event.cover_image_url }] : [],
+    },
+    twitter: {
+      card: event.cover_image_url ? 'summary_large_image' : 'summary',
+      title: event.title,
+      description,
+      images: event.cover_image_url ? [event.cover_image_url] : [],
+    },
+  }
 }
 
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -49,17 +107,13 @@ export default async function EventDetailPage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
-
   // Check if the value looks like a UUID
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
 
   // Fetch community by slug or id
   let communityQuery = supabase
     .from('communities')
-    .select('id, slug')
+    .select('id, slug, name')
     .eq('status', 'active')
 
   if (isUUID) {
@@ -79,20 +133,20 @@ export default async function EventDetailPage({ params }: Props) {
     redirect(`/c/${community.slug}/calendar/${eventId}`)
   }
 
-  // Check membership and get role
-  const { data: member } = await supabase
-    .from('community_members')
-    .select('id, role')
-    .eq('community_id', community.id)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
-
-  if (!member) {
-    redirect(`/c/${community.slug}`)
+  // Check membership and get role (only if user is logged in)
+  let member = null
+  let isAdmin = false
+  if (user) {
+    const { data: memberData } = await supabase
+      .from('community_members')
+      .select('id, role')
+      .eq('community_id', community.id)
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single()
+    member = memberData
+    isAdmin = member?.role === 'admin' || member?.role === 'moderator'
   }
-
-  const isAdmin = member.role === 'admin' || member.role === 'moderator'
 
   // Get event
   const { data: event } = await supabase
@@ -135,36 +189,52 @@ export default async function EventDetailPage({ params }: Props) {
     notFound()
   }
 
-  // Get RSVP count
-  const { count: rsvpCount } = await supabase
-    .from('event_rsvps')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_id', eventId)
-    .eq('status', 'going')
+  // Draft events require authentication
+  if (event.status === 'draft' && !user) {
+    redirect('/login')
+  }
 
-  // Get user's RSVP
-  const { data: userRsvp } = await supabase
-    .from('event_rsvps')
-    .select('status, guests, note')
-    .eq('event_id', eventId)
-    .eq('member_id', member.id)
-    .single()
+  // Get RSVP data (only for authenticated members - RLS requires auth)
+  let rsvpCount = 0
+  let userRsvp = null
+  let attendees: any[] = []
 
-  // Get attendees list
-  const { data: attendees } = await supabase
-    .from('event_rsvps')
-    .select(`
-      status,
-      guests,
-      member:member_id (
-        id,
-        display_name,
-        avatar_url
-      )
-    `)
-    .eq('event_id', eventId)
-    .eq('status', 'going')
-    .limit(20)
+  if (member) {
+    // Get RSVP count
+    const { count } = await supabase
+      .from('event_rsvps')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('status', 'going')
+    rsvpCount = count || 0
+
+    // Get user's RSVP
+    const { data: rsvpData } = await supabase
+      .from('event_rsvps')
+      .select('status, guests, note')
+      .eq('event_id', eventId)
+      .eq('member_id', member.id)
+      .maybeSingle()
+    userRsvp = rsvpData
+
+    // Get attendees list
+    const { data: attendeesData } = await supabase
+      .from('event_rsvps')
+      .select(`
+        status,
+        guests,
+        member:member_id (
+          id,
+          display_name,
+          avatar_url
+        )
+      `)
+      .eq('event_id', eventId)
+      .eq('status', 'going')
+      .limit(20)
+
+    attendees = attendeesData || []
+  }
 
   const organizer = event.organizer as any
   const organizerName = organizer?.display_name || 'Unknown'
@@ -181,25 +251,60 @@ export default async function EventDetailPage({ params }: Props) {
   const isPastEvent = isPast(endDate)
   const isCancelled = event.status === 'cancelled'
 
-  // Check if RSVP is still open
-  const canRsvp = event.rsvp_enabled &&
+  // Check if RSVP is still open (only for members)
+  const canRsvp = member && event.rsvp_enabled &&
     !isPastEvent &&
     !isCancelled &&
     (!event.rsvp_deadline || new Date(event.rsvp_deadline) > new Date()) &&
     (!event.max_attendees || (rsvpCount || 0) < event.max_attendees || userRsvp?.status === 'going')
 
+  const isPublicView = !user || !member
+
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
-      {/* Back button */}
-      <div className="mb-6">
-        <Link
-          href={`/c/${community.slug}/calendar`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Calendar
-        </Link>
-      </div>
+      {/* Back button - only for members */}
+      {member && (
+        <div className="mb-6">
+          <Link
+            href={`/c/${community.slug}/calendar`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Calendar
+          </Link>
+        </div>
+      )}
+
+      {/* Public view banner */}
+      {isPublicView && (
+        <div className="mb-6 p-4 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground mb-3">
+            This event is from <strong>{community.name}</strong> community.
+          </p>
+          <div className="flex gap-2">
+            {!user ? (
+              <>
+                <Button size="sm" asChild>
+                  <Link href={`/login?next=/c/${community.slug}/calendar/${eventId}`}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/signup?next=/c/${community.slug}`}>
+                    Join Community
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" asChild>
+                <Link href={`/c/${community.slug}`}>
+                  View Community
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Cover image */}
       {event.cover_image_url && (
@@ -314,7 +419,22 @@ export default async function EventDetailPage({ params }: Props) {
           {/* Organizer */}
           <Card className="p-6">
             <h2 className="font-semibold mb-4">Organized By</h2>
-            <Link href={`/c/${community.slug}/members/${organizer?.id}`}>
+            {member ? (
+              <Link href={`/c/${community.slug}/members/${organizer?.id}`}>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={organizer?.avatar_url || undefined} />
+                    <AvatarFallback>{organizerInitials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{organizerName}</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {organizer?.role || 'Member'}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ) : (
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={organizer?.avatar_url || undefined} />
@@ -327,7 +447,7 @@ export default async function EventDetailPage({ params }: Props) {
                   </p>
                 </div>
               </div>
-            </Link>
+            )}
           </Card>
         </div>
 
@@ -336,18 +456,33 @@ export default async function EventDetailPage({ params }: Props) {
           {/* RSVP Card */}
           <Card className="p-6">
             <h2 className="font-semibold mb-4">Are you going?</h2>
-            <RsvpButtons
-              eventId={eventId}
-              communityId={community.slug}
-              currentStatus={userRsvp?.status}
-              canRsvp={canRsvp}
-              isPastEvent={isPastEvent}
-              isCancelled={isCancelled}
-            />
-            {event.rsvp_deadline && !isPastEvent && !isCancelled && (
-              <p className="text-xs text-muted-foreground mt-3">
-                RSVP by {format(new Date(event.rsvp_deadline), 'MMM d, yyyy')}
-              </p>
+            {member ? (
+              <>
+                <RsvpButtons
+                  eventId={eventId}
+                  communityId={community.slug}
+                  currentStatus={userRsvp?.status}
+                  canRsvp={canRsvp}
+                  isPastEvent={isPastEvent}
+                  isCancelled={isCancelled}
+                />
+                {event.rsvp_deadline && !isPastEvent && !isCancelled && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    RSVP by {format(new Date(event.rsvp_deadline), 'MMM d, yyyy')}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Sign in to RSVP to this event
+                </p>
+                <Button size="sm" asChild>
+                  <Link href={`/login?next=/c/${community.slug}/calendar/${eventId}`}>
+                    Sign in
+                  </Link>
+                </Button>
+              </div>
             )}
           </Card>
 
@@ -368,24 +503,30 @@ export default async function EventDetailPage({ params }: Props) {
                     .toUpperCase()
                     .slice(0, 2)
 
-                  return (
+                  const content = (
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${member ? 'hover:bg-muted/50' : ''} transition-colors`}>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={attendee?.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{name}</span>
+                      {rsvp.guests > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{rsvp.guests}
+                        </Badge>
+                      )}
+                    </div>
+                  )
+
+                  return member ? (
                     <Link
                       key={attendee?.id}
                       href={`/c/${community.slug}/members/${attendee?.id}`}
                     >
-                      <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={attendee?.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{name}</span>
-                        {rsvp.guests > 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{rsvp.guests}
-                          </Badge>
-                        )}
-                      </div>
+                      {content}
                     </Link>
+                  ) : (
+                    <div key={attendee?.id}>{content}</div>
                   )
                 })}
               </div>
@@ -397,12 +538,18 @@ export default async function EventDetailPage({ params }: Props) {
             </Card>
           )}
 
-          {/* Share */}
+          {/* Share Event */}
           <Card className="p-6">
-            <Button variant="outline" className="w-full">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share Event
-            </Button>
+            <h2 className="font-semibold mb-4">Share Event</h2>
+            <ShareEventButton
+              title={event.title}
+              description={event.description || undefined}
+              location={event.location || undefined}
+              startsAt={event.starts_at}
+              endsAt={event.ends_at}
+              allDay={event.all_day}
+              eventDate={format(startDate, 'EEEE, MMMM d')}
+            />
           </Card>
         </div>
       </div>

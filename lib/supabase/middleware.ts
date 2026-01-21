@@ -11,6 +11,12 @@ const ADMIN_ROUTES = ['/(admin)']
 const AUTH_ROUTES = ['/login', '/signup', '/forgot-password']
 const LOGOUT_ROUTE = '/logout'
 
+// Routes that should be publicly accessible (no auth required)
+const PUBLIC_PATTERNS = [
+  /^\/c\/[^/]+\/news\/[^/]+$/,      // News articles
+  /^\/c\/[^/]+\/calendar\/[^/]+$/,  // Calendar events
+]
+
 // Helper to add timeout to promises
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   const timeout = new Promise<null>((resolve) => {
@@ -65,8 +71,11 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = ADMIN_ROUTES.some((route) => path.includes(route))
   const isAuthRoute = AUTH_ROUTES.some((route) => path.startsWith(route))
 
-  // Redirect unauthenticated users from protected routes
-  if (isProtectedRoute && !user) {
+  // Check if this is a publicly accessible path (e.g., shared news articles)
+  const isPublicPath = PUBLIC_PATTERNS.some((pattern) => pattern.test(path))
+
+  // Redirect unauthenticated users from protected routes (except public paths)
+  if (isProtectedRoute && !user && !isPublicPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', path)

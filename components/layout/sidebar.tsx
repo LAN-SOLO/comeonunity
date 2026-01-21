@@ -18,6 +18,7 @@ import { NotificationsDropdown } from '@/components/notifications/notifications-
 import { SearchCommand } from '@/components/search/search-command'
 import { SearchButton } from '@/components/search/search-button'
 import { ThemeToggleInline } from '@/components/theme'
+import { LogoText } from '@/components/brand/logo-text'
 import {
   Home,
   Users,
@@ -63,11 +64,8 @@ export function Sidebar() {
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
       {/* Logo and Notifications */}
       <div className="h-16 flex items-center justify-between px-6 border-b border-neutral-200 dark:border-neutral-800">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-black dark:bg-white flex items-center justify-center">
-            <span className="text-white dark:text-black font-bold text-base">C</span>
-          </div>
-          <span className="font-semibold text-base">ComeOnUnity</span>
+        <Link href="/" className="flex items-center">
+          <LogoText size="sm" />
         </Link>
         {communityIdFromPath && (
           <NotificationsDropdown communityId={communityIdFromPath} />
@@ -135,12 +133,10 @@ export function Sidebar() {
       </div>
 
       {/* Search */}
-      {communityIdFromPath && (
-        <div className="p-4">
-          <SearchButton />
-          <SearchCommand communityId={communityIdFromPath} />
-        </div>
-      )}
+      <div className="p-4">
+        <SearchButton />
+        <SearchCommand communityId={communityIdFromPath} />
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4">

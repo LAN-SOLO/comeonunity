@@ -24,23 +24,34 @@ import {
   X,
   Loader2,
   Save,
-  Eye,
   Send,
+  Trash2,
 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { categories } from '@/lib/news-categories'
 
-export default function NewNewsPage() {
+export default function EditNewsPage() {
   const params = useParams()
   const router = useRouter()
   const communitySlug = params.communityId as string
+  const articleId = params.articleId as string
 
   const [communityId, setCommunityId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [originalStatus, setOriginalStatus] = useState<string>('draft')
   const [formData, setFormData] = useState({
     title: '',
     excerpt: '',
@@ -53,7 +64,7 @@ export default function NewNewsPage() {
 
   useEffect(() => {
     initializePage()
-  }, [communitySlug])
+  }, [communitySlug, articleId])
 
   const initializePage = async () => {
     setIsLoading(true)
@@ -102,7 +113,30 @@ export default function NewNewsPage() {
         return
       }
 
-      setCurrentMemberId(member.id)
+      // Fetch the article
+      const { data: article, error: articleError } = await supabase
+        .from('news')
+        .select('*')
+        .eq('id', articleId)
+        .eq('community_id', community.id)
+        .single()
+
+      if (articleError || !article) {
+        toast.error('Article not found')
+        router.push(`/c/${communitySlug}/news`)
+        return
+      }
+
+      // Populate form with existing data
+      setFormData({
+        title: article.title || '',
+        excerpt: article.excerpt || '',
+        content: article.content || '',
+        category: article.category || 'general',
+        pinned: article.pinned || false,
+      })
+      setImageUrl(article.image_url)
+      setOriginalStatus(article.status)
     } catch (err) {
       console.error('Failed to initialize page:', err)
     } finally {
@@ -163,39 +197,61 @@ export default function NewNewsPage() {
       return
     }
 
-    if (!currentMemberId) {
-      toast.error('Not authorized')
-      return
-    }
-
     setIsSaving(true)
     try {
-      const { data: article, error } = await supabase
+      const updateData: any = {
+        title: formData.title.trim(),
+        excerpt: formData.excerpt.trim() || formData.content.trim().slice(0, 200),
+        content: formData.content.trim(),
+        category: formData.category,
+        image_url: imageUrl,
+        pinned: formData.pinned,
+        updated_at: new Date().toISOString(),
+      }
+
+      // If publishing for the first time
+      if (publish && originalStatus === 'draft') {
+        updateData.status = 'published'
+        updateData.published_at = new Date().toISOString()
+      } else if (!publish && originalStatus === 'published') {
+        // Unpublishing - convert back to draft
+        updateData.status = 'draft'
+      }
+
+      const { error } = await supabase
         .from('news')
-        .insert({
-          community_id: communityId,
-          author_id: currentMemberId,
-          title: formData.title.trim(),
-          excerpt: formData.excerpt.trim() || formData.content.trim().slice(0, 200),
-          content: formData.content.trim(),
-          category: formData.category,
-          image_url: imageUrl,
-          pinned: formData.pinned,
-          status: publish ? 'published' : 'draft',
-          published_at: publish ? new Date().toISOString() : null,
-        })
-        .select()
-        .single()
+        .update(updateData)
+        .eq('id', articleId)
 
       if (error) throw error
 
-      toast.success(publish ? 'Article published!' : 'Draft saved')
-      router.push(`/c/${communitySlug}/news/${article.id}`)
+      toast.success(publish ? 'Article updated!' : 'Changes saved')
+      router.push(`/c/${communitySlug}/news/${articleId}`)
     } catch (err: any) {
       console.error('Save failed:', err)
       toast.error(err.message || 'Failed to save article')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('news')
+        .delete()
+        .eq('id', articleId)
+
+      if (error) throw error
+
+      toast.success('Article deleted')
+      router.push(`/c/${communitySlug}/news`)
+    } catch (err: any) {
+      console.error('Delete failed:', err)
+      toast.error(err.message || 'Failed to delete article')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -212,18 +268,18 @@ export default function NewNewsPage() {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href={`/c/${communitySlug}/news`}
+          href={`/c/${communitySlug}/news/${articleId}`}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to News
+          Back to Article
         </Link>
       </div>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Create News Post</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Edit News Post</h1>
         <p className="text-muted-foreground mt-1">
-          Share an update with your community
+          Update your article
         </p>
       </div>
 
@@ -351,14 +407,19 @@ export default function NewNewsPage() {
       {/* Actions */}
       <div className="flex gap-3">
         <Button
-          onClick={() => handleSave(true)}
+          onClick={() => handleSave(originalStatus === 'published')}
           disabled={isSaving}
           className="flex-1"
         >
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Publishing...
+              Saving...
+            </>
+          ) : originalStatus === 'published' ? (
+            <>
+              <Send className="mr-2 h-4 w-4" />
+              Update
             </>
           ) : (
             <>
@@ -367,20 +428,58 @@ export default function NewNewsPage() {
             </>
           )}
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => handleSave(false)}
-          disabled={isSaving}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Save Draft
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/c/${communitySlug}/news`)}
-        >
-          Cancel
-        </Button>
+        {originalStatus === 'published' && (
+          <Button
+            variant="outline"
+            onClick={() => handleSave(false)}
+            disabled={isSaving}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Unpublish
+          </Button>
+        )}
+        {originalStatus === 'draft' && (
+          <Button
+            variant="outline"
+            onClick={() => handleSave(false)}
+            disabled={isSaving}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Save Draft
+          </Button>
+        )}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Article?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. The article will be permanently deleted.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Article'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

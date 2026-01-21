@@ -36,9 +36,11 @@ interface Item {
   images: string[] | null
   category: string
   condition: string | null
-  pickup_notes: string | null
+  notes: string | null
+  pickup_location: string | null
   owner: {
     id: string
+    user_id: string
     display_name: string | null
     avatar_url: string | null
     unit_number: string | null
@@ -132,11 +134,13 @@ export default function BorrowRequestPage() {
           images,
           category,
           condition,
-          pickup_notes,
+          notes,
+          pickup_location,
           status,
           owner_id,
           owner:owner_id (
             id,
+            user_id,
             display_name,
             avatar_url,
             unit_number
@@ -173,7 +177,8 @@ export default function BorrowRequestPage() {
         images: itemData.images,
         category: itemData.category,
         condition: itemData.condition,
-        pickup_notes: itemData.pickup_notes,
+        notes: itemData.notes,
+        pickup_location: itemData.pickup_location,
         owner: itemData.owner as unknown as Item['owner'],
       }
       setItem(processedItem)
@@ -203,9 +208,9 @@ export default function BorrowRequestPage() {
 
     setIsSubmitting(true)
     try {
-      // Create booking request
-      const { data: booking, error } = await supabase
-        .from('bookings')
+      // Create borrow request
+      const { data: borrowRequest, error } = await supabase
+        .from('borrow_requests')
         .insert({
           community_id: communityId,
           item_id: itemId,
@@ -224,12 +229,12 @@ export default function BorrowRequestPage() {
       await supabase
         .from('notifications')
         .insert({
-          user_id: item.owner.id,
+          user_id: item.owner.user_id,
           community_id: communityId,
           type: 'borrow_request',
           title: 'New Borrow Request',
           message: `Someone wants to borrow your "${item.name}"`,
-          data: { booking_id: booking.id, item_id: itemId },
+          data: { borrow_request_id: borrowRequest.id, item_id: itemId },
         })
 
       toast.success('Borrow request sent!')
@@ -408,12 +413,23 @@ export default function BorrowRequestPage() {
           />
         </Card>
 
-        {/* Pickup Notes */}
-        {item.pickup_notes && (
+        {/* Pickup Information */}
+        {(item.pickup_location || item.notes) && (
           <>
             <SectionHeader title="Pickup Information" />
-            <Card className="p-4 mb-6 bg-muted/50">
-              <p className="text-sm">{item.pickup_notes}</p>
+            <Card className="p-4 mb-6 bg-muted/50 space-y-2">
+              {item.pickup_location && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Location</p>
+                  <p className="text-sm">{item.pickup_location}</p>
+                </div>
+              )}
+              {item.notes && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Notes</p>
+                  <p className="text-sm">{item.notes}</p>
+                </div>
+              )}
             </Card>
           </>
         )}

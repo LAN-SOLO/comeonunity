@@ -4,16 +4,9 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  Megaphone,
-  Calendar,
-  AlertTriangle,
-  Info,
-  PartyPopper,
-  Wrench,
-  Pin,
-} from 'lucide-react'
+import { Megaphone, Pin } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { categoryIcons, categoryLabels, categoryColors } from '@/lib/news-categories'
 
 export interface NewsCardProps {
   article: {
@@ -32,33 +25,6 @@ export interface NewsCardProps {
   }
   communityId: string
   variant?: 'card' | 'featured' | 'compact'
-}
-
-const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  announcement: Megaphone,
-  event: Calendar,
-  urgent: AlertTriangle,
-  info: Info,
-  celebration: PartyPopper,
-  maintenance: Wrench,
-}
-
-const categoryLabels: Record<string, string> = {
-  announcement: 'Announcement',
-  event: 'Event',
-  urgent: 'Urgent',
-  info: 'Information',
-  celebration: 'Celebration',
-  maintenance: 'Maintenance',
-}
-
-const categoryColors: Record<string, string> = {
-  announcement: 'bg-blue-500 text-white',
-  event: 'bg-purple-500 text-white',
-  urgent: 'bg-red-500 text-white',
-  info: 'bg-gray-500 text-white',
-  celebration: 'bg-green text-white',
-  maintenance: 'bg-amber-500 text-white',
 }
 
 export function NewsCard({ article, communityId, variant = 'card' }: NewsCardProps) {
@@ -205,4 +171,5 @@ export function NewsCard({ article, communityId, variant = 'card' }: NewsCardPro
   )
 }
 
-export { categoryIcons, categoryLabels, categoryColors }
+// Re-export for backwards compatibility
+export { categoryIcons, categoryLabels, categoryColors } from '@/lib/news-categories'

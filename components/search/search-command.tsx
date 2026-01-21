@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,28 +12,30 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   User,
   Package,
   Calendar,
   Newspaper,
-  Search,
   Loader2,
-  MapPin,
+  Building2,
+  Boxes,
 } from 'lucide-react'
-import { format } from 'date-fns'
 
 interface SearchResult {
-  type: 'member' | 'item' | 'event' | 'news'
+  type: 'member' | 'item' | 'event' | 'news' | 'resource'
   id: string
   title: string
   subtitle?: string
   image?: string | null
   href: string
+  communityName?: string
+  communitySlug?: string
 }
 
 interface SearchCommandProps {
-  communityId: string
+  communityId?: string // Optional - if not provided, searches across all user's communities
 }
 
 export function SearchCommand({ communityId }: SearchCommandProps) {
@@ -43,7 +44,6 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   // Open with Cmd+K or Ctrl+K
   useEffect(() => {
@@ -58,7 +58,7 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
     return () => document.removeEventListener('keydown', down)
   }, [])
 
-  // Search function
+  // Search function using API
   const search = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setResults([])
@@ -67,86 +67,31 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
 
     setIsLoading(true)
     try {
-      const searchTerm = `%${searchQuery.toLowerCase()}%`
+      const params = new URLSearchParams({
+        q: searchQuery,
+        types: 'news,item,event,member,resource',
+        limit: '20',
+      })
 
-      // Search members
-      const { data: members } = await supabase
-        .from('community_members')
-        .select('id, display_name, avatar_url, role')
-        .eq('community_id', communityId)
-        .eq('status', 'active')
-        .ilike('display_name', searchTerm)
-        .limit(5)
+      if (communityId) {
+        params.set('community_id', communityId)
+      }
 
-      // Search items
-      const { data: items } = await supabase
-        .from('items')
-        .select('id, name, category, status')
-        .eq('community_id', communityId)
-        .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
-        .limit(5)
+      const response = await fetch(`/api/search?${params.toString()}`)
 
-      // Search events
-      const { data: events } = await supabase
-        .from('events')
-        .select('id, title, starts_at, location')
-        .eq('community_id', communityId)
-        .neq('status', 'draft')
-        .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
-        .gte('ends_at', new Date().toISOString())
-        .order('starts_at', { ascending: true })
-        .limit(5)
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
 
-      // Search news
-      const { data: news } = await supabase
-        .from('news')
-        .select('id, title, category, published_at')
-        .eq('community_id', communityId)
-        .eq('status', 'published')
-        .or(`title.ilike.${searchTerm},content.ilike.${searchTerm}`)
-        .order('published_at', { ascending: false })
-        .limit(5)
-
-      // Combine results
-      const allResults: SearchResult[] = [
-        ...(members || []).map((m) => ({
-          type: 'member' as const,
-          id: m.id,
-          title: m.display_name || 'Unknown',
-          subtitle: m.role,
-          image: m.avatar_url,
-          href: `/c/${communityId}/members/${m.id}`,
-        })),
-        ...(items || []).map((i) => ({
-          type: 'item' as const,
-          id: i.id,
-          title: i.name,
-          subtitle: `${i.category} • ${i.status}`,
-          href: `/c/${communityId}/items/${i.id}`,
-        })),
-        ...(events || []).map((e) => ({
-          type: 'event' as const,
-          id: e.id,
-          title: e.title,
-          subtitle: `${format(new Date(e.starts_at), 'MMM d')}${e.location ? ` • ${e.location}` : ''}`,
-          href: `/c/${communityId}/calendar/${e.id}`,
-        })),
-        ...(news || []).map((n) => ({
-          type: 'news' as const,
-          id: n.id,
-          title: n.title,
-          subtitle: n.category,
-          href: `/c/${communityId}/news/${n.id}`,
-        })),
-      ]
-
-      setResults(allResults)
-    } catch {
-      // Silently fail - tables may not exist yet
+      const data = await response.json()
+      setResults(data.results || [])
+    } catch (err) {
+      console.error('Search error:', err)
+      setResults([])
     } finally {
       setIsLoading(false)
     }
-  }, [communityId, supabase])
+  }, [communityId])
 
   // Debounced search
   useEffect(() => {
@@ -173,6 +118,8 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
         return Calendar
       case 'news':
         return Newspaper
+      case 'resource':
+        return Boxes
     }
   }
 
@@ -190,11 +137,12 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
   const itemResults = results.filter((r) => r.type === 'item')
   const eventResults = results.filter((r) => r.type === 'event')
   const newsResults = results.filter((r) => r.type === 'news')
+  const resourceResults = results.filter((r) => r.type === 'resource')
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
+    <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
       <CommandInput
-        placeholder="Search members, items, events, news..."
+        placeholder="Search members, items, events, news, resources..."
         value={query}
         onValueChange={setQuery}
       />
@@ -224,7 +172,15 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="font-medium">{result.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{result.title}</p>
+                        {result.communityName && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                            {result.communityName}
+                          </Badge>
+                        )}
+                      </div>
                       {result.subtitle && (
                         <p className="text-xs text-muted-foreground capitalize">
                           {result.subtitle}
@@ -238,7 +194,7 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
 
             {itemResults.length > 0 && (
               <>
-                <CommandSeparator />
+                {memberResults.length > 0 && <CommandSeparator />}
                 <CommandGroup heading="Items">
                   {itemResults.map((result) => {
                     const Icon = getIcon(result.type)
@@ -252,7 +208,15 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
                           <Icon className="h-4 w-4 text-green-600 dark:text-green-400" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium">{result.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{result.title}</p>
+                            {result.communityName && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                                {result.communityName}
+                              </Badge>
+                            )}
+                          </div>
                           {result.subtitle && (
                             <p className="text-xs text-muted-foreground">
                               {result.subtitle}
@@ -268,7 +232,7 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
 
             {eventResults.length > 0 && (
               <>
-                <CommandSeparator />
+                {(memberResults.length > 0 || itemResults.length > 0) && <CommandSeparator />}
                 <CommandGroup heading="Events">
                   {eventResults.map((result) => {
                     const Icon = getIcon(result.type)
@@ -282,7 +246,15 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
                           <Icon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium">{result.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{result.title}</p>
+                            {result.communityName && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                                {result.communityName}
+                              </Badge>
+                            )}
+                          </div>
                           {result.subtitle && (
                             <p className="text-xs text-muted-foreground">
                               {result.subtitle}
@@ -298,7 +270,7 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
 
             {newsResults.length > 0 && (
               <>
-                <CommandSeparator />
+                {(memberResults.length > 0 || itemResults.length > 0 || eventResults.length > 0) && <CommandSeparator />}
                 <CommandGroup heading="News">
                   {newsResults.map((result) => {
                     const Icon = getIcon(result.type)
@@ -312,7 +284,53 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
                           <Icon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium">{result.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{result.title}</p>
+                            {result.communityName && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                                {result.communityName}
+                              </Badge>
+                            )}
+                          </div>
+                          {result.subtitle && (
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {result.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              </>
+            )}
+
+            {resourceResults.length > 0 && (
+              <>
+                {(memberResults.length > 0 || itemResults.length > 0 || eventResults.length > 0 || newsResults.length > 0) && <CommandSeparator />}
+                <CommandGroup heading="Resources">
+                  {resourceResults.map((result) => {
+                    const Icon = getIcon(result.type)
+                    return (
+                      <CommandItem
+                        key={`resource-${result.id}`}
+                        onSelect={() => handleSelect(result)}
+                        className="cursor-pointer"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center mr-2">
+                          <Icon className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{result.title}</p>
+                            {result.communityName && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Building2 className="h-2.5 w-2.5 mr-0.5" />
+                                {result.communityName}
+                              </Badge>
+                            )}
+                          </div>
                           {result.subtitle && (
                             <p className="text-xs text-muted-foreground capitalize">
                               {result.subtitle}

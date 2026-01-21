@@ -70,7 +70,8 @@ export default function EditItemPage() {
     category: '',
     condition: 'good',
     status: 'available',
-    pickup_notes: '',
+    notes: '',
+    pickup_location: '',
   })
 
   const supabase = createClient()
@@ -162,7 +163,8 @@ export default function EditItemPage() {
         category: item.category || '',
         condition: item.condition || 'good',
         status: item.status || 'available',
-        pickup_notes: item.pickup_notes || '',
+        notes: item.notes || '',
+        pickup_location: item.pickup_location || '',
       })
     } catch (err) {
       console.error('Failed to fetch item:', err)
@@ -179,34 +181,50 @@ export default function EditItemPage() {
       return
     }
 
+    if (!communityId) {
+      toast.error('Community not loaded')
+      return
+    }
+
     setIsUploading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+      const maxSize = 10 * 1024 * 1024 // 10MB as per bucket config
       const newImages: string[] = []
 
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} is not an image`)
+        // Validate file type
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`${file.name}: Only JPEG, PNG, and WebP images are allowed`)
           continue
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 5MB)`)
+        // Validate file size (max 10MB)
+        if (file.size > maxSize) {
+          toast.error(`${file.name} is too large (max 10MB)`)
           continue
         }
 
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        // Use communityId as first folder to match storage policy
+        // Path format: {community_id}/{user_id}-{timestamp}-{random}.{ext}
+        const fileName = `${communityId}/${user.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`
+
+        console.log('Uploading to path:', fileName, 'communityId:', communityId)
 
         const { error: uploadError } = await supabase.storage
           .from('item-images')
-          .upload(fileName, file)
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+          })
 
         if (uploadError) {
           console.error('Upload error:', uploadError)
-          toast.error(`Failed to upload ${file.name}`)
+          toast.error(`Failed to upload ${file.name}: ${uploadError.message}`)
           continue
         }
 
@@ -221,9 +239,10 @@ export default function EditItemPage() {
       if (newImages.length > 0) {
         toast.success(`${newImages.length} image(s) uploaded`)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err)
-      toast.error(err.message || 'Failed to upload images')
+      const message = err instanceof Error ? err.message : 'Failed to upload images'
+      toast.error(message)
     } finally {
       setIsUploading(false)
     }
@@ -256,7 +275,8 @@ export default function EditItemPage() {
           category: formData.category,
           condition: formData.condition,
           status: formData.status,
-          pickup_notes: formData.pickup_notes.trim() || null,
+          notes: formData.notes.trim() || null,
+          pickup_location: formData.pickup_location.trim() || null,
           images: images.length > 0 ? images : null,
         })
         .eq('id', itemId)
@@ -354,7 +374,7 @@ export default function EditItemPage() {
                 )}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   multiple
                   onChange={handleImageUpload}
                   className="hidden"
@@ -363,9 +383,10 @@ export default function EditItemPage() {
               </label>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Add up to 5 photos. The first photo will be the cover image.
-          </p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Add up to 5 photos. The first photo will be the cover image.</p>
+            <p>Accepted formats: JPEG, PNG, WebP. Maximum file size: 10MB per image.</p>
+          </div>
         </Card>
 
         {/* Basic Info */}
@@ -453,12 +474,22 @@ export default function EditItemPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pickup_notes">Pickup Notes</Label>
+            <Label htmlFor="pickup_location">Pickup Location</Label>
+            <Input
+              id="pickup_location"
+              value={formData.pickup_location}
+              onChange={(e) => setFormData({ ...formData, pickup_location: e.target.value })}
+              placeholder="e.g., Unit 4B, Front porch, Garage..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes for Borrowers</Label>
             <Textarea
-              id="pickup_notes"
-              value={formData.pickup_notes}
-              onChange={(e) => setFormData({ ...formData, pickup_notes: e.target.value })}
-              placeholder="e.g., Available for pickup after 5pm, leave at front door..."
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="e.g., Available after 5pm, please handle with care, return cleaned..."
               rows={2}
             />
           </div>

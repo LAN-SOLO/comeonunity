@@ -121,16 +121,19 @@ export default function CalendarPage() {
     setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
 
-      // Get member ID for RSVP check
-      const { data: member } = await supabase
-        .from('community_members')
-        .select('id')
-        .eq('community_id', communityId)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single()
+      // Get member ID for RSVP check (only if user is logged in)
+      let member = null
+      if (user) {
+        const { data: memberData } = await supabase
+          .from('community_members')
+          .select('id')
+          .eq('community_id', communityId)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .single()
+        member = memberData
+      }
 
       // Get events for the month (with some buffer for multi-day events)
       const monthStart = startOfMonth(currentMonth)
@@ -167,32 +170,38 @@ export default function CalendarPage() {
 
       if (error) throw error
 
-      // Get RSVP counts and user's RSVP status
+      // Get RSVP counts and user's RSVP status (only for members)
       const eventsWithRsvp = await Promise.all(
         (eventsData || []).map(async (event) => {
-          const [countResult, userRsvp] = await Promise.all([
-            supabase
-              .from('event_rsvps')
-              .select('id', { count: 'exact', head: true })
-              .eq('event_id', event.id)
-              .eq('status', 'going'),
-            member
-              ? supabase
-                  .from('event_rsvps')
-                  .select('status')
-                  .eq('event_id', event.id)
-                  .eq('member_id', member.id)
-                  .single()
-              : Promise.resolve({ data: null }),
-          ])
+          let rsvpCount = 0
+          let userRsvp = null
+
+          // Only query RSVPs if user is a member (RLS requires auth)
+          if (member) {
+            const [countResult, userRsvpResult] = await Promise.all([
+              supabase
+                .from('event_rsvps')
+                .select('id', { count: 'exact', head: true })
+                .eq('event_id', event.id)
+                .eq('status', 'going'),
+              supabase
+                .from('event_rsvps')
+                .select('status')
+                .eq('event_id', event.id)
+                .eq('member_id', member.id)
+                .maybeSingle(),
+            ])
+            rsvpCount = countResult.count || 0
+            userRsvp = userRsvpResult.data?.status || null
+          }
 
           return {
             ...event,
             organizer: Array.isArray(event.organizer)
               ? event.organizer[0] || null
               : event.organizer as Event['organizer'],
-            rsvp_count: countResult.count || 0,
-            user_rsvp: userRsvp.data?.status || null,
+            rsvp_count: rsvpCount,
+            user_rsvp: userRsvp,
           }
         })
       )

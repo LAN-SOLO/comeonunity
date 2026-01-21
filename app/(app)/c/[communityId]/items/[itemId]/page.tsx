@@ -14,11 +14,11 @@ import {
   Calendar,
   Edit,
   Package,
-  MessageCircle,
   Clock,
   CheckCircle,
   XCircle,
 } from 'lucide-react'
+import { BorrowRequestForm } from '@/components/items/borrow-request-form'
 import { categoryLabels, statusColors, statusLabels } from '@/components/items/item-card'
 
 interface Props {
@@ -92,7 +92,8 @@ export default async function ItemDetailPage({ params }: Props) {
       status,
       images,
       condition,
-      pickup_notes,
+      notes,
+      pickup_location,
       created_at,
       owner_id,
       owner:owner_id (
@@ -126,9 +127,9 @@ export default async function ItemDetailPage({ params }: Props) {
 
   const ownerPhone = owner?.show_phone ? owner?.phone : null
 
-  // Get active booking if any
-  const { data: activeBooking } = await supabase
-    .from('bookings')
+  // Get active borrow request if any
+  const { data: activeBorrowRequest } = await supabase
+    .from('borrow_requests')
     .select(`
       id,
       status,
@@ -144,7 +145,7 @@ export default async function ItemDetailPage({ params }: Props) {
     .in('status', ['pending', 'approved', 'active'])
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
@@ -230,13 +231,23 @@ export default async function ItemDetailPage({ params }: Props) {
             </div>
           )}
 
-          {item.pickup_notes && (
+          {(item.pickup_location || item.notes) && (
             <Card className="p-4 mb-6 bg-muted/50">
-              <h3 className="font-medium mb-1 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Pickup Notes
-              </h3>
-              <p className="text-sm text-muted-foreground">{item.pickup_notes}</p>
+              {item.pickup_location && (
+                <div className="mb-2">
+                  <h3 className="font-medium mb-1 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Pickup Location
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{item.pickup_location}</p>
+                </div>
+              )}
+              {item.notes && (
+                <div>
+                  <h3 className="font-medium mb-1">Notes</h3>
+                  <p className="text-sm text-muted-foreground">{item.notes}</p>
+                </div>
+              )}
             </Card>
           )}
 
@@ -249,32 +260,45 @@ export default async function ItemDetailPage({ params }: Props) {
             })}
           </div>
 
-          {/* Borrow Button */}
-          {!isOwner && item.status === 'available' && (
-            <Button className="w-full mb-6" asChild>
-              <Link href={`/c/${community.slug}/items/${itemId}/borrow`}>
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Request to Borrow
-              </Link>
-            </Button>
+          {/* Borrow Request Form */}
+          {!isOwner && item.status === 'available' && !activeBorrowRequest && (
+            <div className="mb-6">
+              <BorrowRequestForm
+                itemId={itemId}
+                itemName={item.name}
+                ownerUserId={owner?.user_id}
+                communityId={community.id}
+                communitySlug={community.slug}
+                currentMemberId={currentMember.id}
+              />
+            </div>
+          )}
+
+          {/* Owner notice */}
+          {isOwner && item.status === 'available' && !activeBorrowRequest && (
+            <Card className="p-4 mb-6 bg-muted/50 text-center">
+              <p className="text-sm text-muted-foreground">
+                This is your item. Other members can request to borrow it.
+              </p>
+            </Card>
           )}
 
           {/* Active Booking Info */}
-          {activeBooking && (
+          {activeBorrowRequest && (
             <Card className="p-4 mb-6 border-amber-500/50 bg-amber-500/5">
               <h3 className="font-medium mb-2 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-amber-500" />
-                {activeBooking.status === 'pending' && 'Pending Request'}
-                {activeBooking.status === 'approved' && 'Approved Booking'}
-                {activeBooking.status === 'active' && 'Currently Borrowed'}
+                {activeBorrowRequest.status === 'pending' && 'Pending Request'}
+                {activeBorrowRequest.status === 'approved' && 'Approved Booking'}
+                {activeBorrowRequest.status === 'active' && 'Currently Borrowed'}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {new Date(activeBooking.start_date).toLocaleDateString()} - {new Date(activeBooking.end_date).toLocaleDateString()}
+                {new Date(activeBorrowRequest.start_date).toLocaleDateString()} - {new Date(activeBorrowRequest.end_date).toLocaleDateString()}
               </p>
               {isOwner && (
                 <Button variant="outline" size="sm" className="mt-3" asChild>
-                  <Link href={`/c/${community.slug}/bookings/${activeBooking.id}`}>
-                    View Request
+                  <Link href={`/c/${community.slug}/items/${itemId}/requests`}>
+                    View Requests
                   </Link>
                 </Button>
               )}

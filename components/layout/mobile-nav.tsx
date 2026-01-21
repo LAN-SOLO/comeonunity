@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { NotificationsDropdown } from '@/components/notifications/notifications-dropdown'
 import { ThemeToggleInline } from '@/components/theme'
+import { LogoText } from '@/components/brand/logo-text'
 import {
   Home,
   Users,
@@ -74,11 +75,8 @@ export function MobileNav() {
             <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
             {/* Logo */}
             <div className="h-14 flex items-center px-6 border-b border-black/20 dark:border-white/50">
-              <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">C</span>
-                </div>
-                <span className="font-semibold text-lg">ComeOnUnity</span>
+              <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
+                <LogoText size="sm" />
               </Link>
             </div>
 

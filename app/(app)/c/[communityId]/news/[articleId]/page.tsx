@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -10,13 +10,72 @@ import {
   Calendar,
   Edit,
   Pin,
-  Share2,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { categoryIcons, categoryLabels, categoryColors } from '@/components/news/news-card'
+import { categoryIcons, categoryLabels, categoryColors } from '@/lib/news-categories'
+import { ShareButton } from '@/components/news/share-button'
 
 interface Props {
   params: Promise<{ communityId: string; articleId: string }>
+}
+
+// Generate metadata for share previews (works without auth)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { communityId: communitySlug, articleId } = await params
+  const supabase = await createClient()
+
+  // Check if the value looks like a UUID
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
+
+  // Resolve the community
+  let communityQuery = supabase
+    .from('communities')
+    .select('id, name, slug')
+    .eq('status', 'active')
+
+  if (isUUID) {
+    communityQuery = communityQuery.or(`slug.eq.${communitySlug},id.eq.${communitySlug}`)
+  } else {
+    communityQuery = communityQuery.eq('slug', communitySlug)
+  }
+
+  const { data: community } = await communityQuery.single()
+  if (!community) {
+    return { title: 'Article Not Found' }
+  }
+
+  // Get article (only published ones for metadata)
+  const { data: article } = await supabase
+    .from('news')
+    .select('title, excerpt, image_url')
+    .eq('id', articleId)
+    .eq('community_id', community.id)
+    .eq('status', 'published')
+    .single()
+
+  if (!article) {
+    return { title: 'Article Not Found' }
+  }
+
+  const title = `${article.title} - ${community.name}`
+  const description = article.excerpt || article.title
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: article.title,
+      description,
+      type: 'article',
+      images: article.image_url ? [{ url: article.image_url }] : [],
+    },
+    twitter: {
+      card: article.image_url ? 'summary_large_image' : 'summary',
+      title: article.title,
+      description,
+      images: article.image_url ? [article.image_url] : [],
+    },
+  }
 }
 
 export default async function NewsArticlePage({ params }: Props) {
@@ -24,17 +83,13 @@ export default async function NewsArticlePage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
-
   // Check if the value looks like a UUID
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
 
   // Resolve the community by slug or id
   let communityQuery = supabase
     .from('communities')
-    .select('id, slug')
+    .select('id, slug, name')
     .eq('status', 'active')
 
   if (isUUID) {
@@ -54,22 +109,22 @@ export default async function NewsArticlePage({ params }: Props) {
     redirect(`/c/${community.slug}/news/${articleId}`)
   }
 
-  // Check membership and get role
-  const { data: member } = await supabase
-    .from('community_members')
-    .select('id, role')
-    .eq('community_id', community.id)
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
-
-  if (!member) {
-    redirect(`/c/${community.slug}`)
+  // Check membership and get role (only if user is logged in)
+  let member = null
+  let isAdmin = false
+  if (user) {
+    const { data: memberData } = await supabase
+      .from('community_members')
+      .select('id, role')
+      .eq('community_id', community.id)
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single()
+    member = memberData
+    isAdmin = member?.role === 'admin' || member?.role === 'moderator'
   }
 
-  const isAdmin = member.role === 'admin' || member.role === 'moderator'
-
-  // Get article
+  // Get article - only published articles for public/non-members
   const { data: article } = await supabase
     .from('news')
     .select(`
@@ -104,6 +159,11 @@ export default async function NewsArticlePage({ params }: Props) {
     notFound()
   }
 
+  // Draft articles require authentication and admin access
+  if (article.status === 'draft' && !user) {
+    redirect('/login')
+  }
+
   const author = article.author as any
   const authorName = author?.display_name || 'Admin'
   const authorInitials = authorName
@@ -114,19 +174,53 @@ export default async function NewsArticlePage({ params }: Props) {
     .slice(0, 2)
 
   const Icon = categoryIcons[article.category] || categoryIcons.announcement
+  const isPublicView = !user || !member
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-      {/* Back button */}
-      <div className="mb-6">
-        <Link
-          href={`/c/${community.slug}/news`}
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to News
-        </Link>
-      </div>
+      {/* Back button - only for members */}
+      {member && (
+        <div className="mb-6">
+          <Link
+            href={`/c/${community.slug}/news`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to News
+          </Link>
+        </div>
+      )}
+
+      {/* Public view banner */}
+      {isPublicView && (
+        <div className="mb-6 p-4 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground mb-3">
+            This article is from <strong>{community.name}</strong> community.
+          </p>
+          <div className="flex gap-2">
+            {!user ? (
+              <>
+                <Button size="sm" asChild>
+                  <Link href={`/login?next=/c/${community.slug}/news/${articleId}`}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/signup?next=/c/${community.slug}`}>
+                    Join Community
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" asChild>
+                <Link href={`/c/${community.slug}`}>
+                  View Community
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Article Header */}
       <article>
@@ -161,7 +255,22 @@ export default async function NewsArticlePage({ params }: Props) {
 
         {/* Author and date */}
         <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-          <Link href={`/c/${community.slug}/members/${author?.id}`}>
+          {member ? (
+            <Link href={`/c/${community.slug}/members/${author?.id}`}>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={author?.avatar_url || undefined} />
+                  <AvatarFallback>{authorInitials}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{authorName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {author?.role === 'admin' ? 'Admin' : 'Moderator'}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ) : (
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={author?.avatar_url || undefined} />
@@ -174,7 +283,7 @@ export default async function NewsArticlePage({ params }: Props) {
                 </p>
               </div>
             </div>
-          </Link>
+          )}
           <div className="flex-1" />
           <div className="text-sm text-muted-foreground flex items-center gap-1">
             <Calendar className="h-4 w-4" />
@@ -195,7 +304,6 @@ export default async function NewsArticlePage({ params }: Props) {
 
         {/* Content */}
         <div className="prose prose-neutral dark:prose-invert max-w-none">
-          {/* Render content - in a real app you'd use markdown or rich text */}
           <div className="whitespace-pre-wrap text-foreground leading-relaxed">
             {article.content}
           </div>
@@ -209,15 +317,10 @@ export default async function NewsArticlePage({ params }: Props) {
                 <>Updated {format(new Date(article.updated_at), 'MMM d, yyyy')}</>
               )}
             </p>
-            <Button variant="outline" size="sm">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
-            </Button>
+            <ShareButton title={article.title} text={article.excerpt || undefined} />
           </div>
         </div>
       </article>
-
-      {/* Related Articles could go here */}
     </div>
   )
 }
