@@ -292,12 +292,15 @@ export default async function ItemDetailPage({ params }: Props) {
           {activeBorrowRequest && (() => {
             const borrower = activeBorrowRequest.borrower as any
             const isOwnerReservation = isOwner && borrower?.id === currentMember.id
+            const isScheduledReservation = isOwnerReservation && activeBorrowRequest.status === 'approved'
+            const isActiveReservation = isOwnerReservation && activeBorrowRequest.status === 'active'
 
             return (
               <Card className={`p-4 mb-6 ${isOwnerReservation ? 'border-muted bg-muted/50' : 'border-amber-500/50 bg-amber-500/5'}`}>
                 <h3 className="font-medium mb-2 flex items-center gap-2">
                   <Clock className={`h-4 w-4 ${isOwnerReservation ? 'text-muted-foreground' : 'text-amber-500'}`} />
-                  {isOwnerReservation && 'Reserved by You'}
+                  {isScheduledReservation && 'Scheduled Reservation'}
+                  {isActiveReservation && 'Reserved by You'}
                   {!isOwnerReservation && activeBorrowRequest.status === 'pending' && 'Pending Request'}
                   {!isOwnerReservation && activeBorrowRequest.status === 'approved' && 'Approved Booking'}
                   {!isOwnerReservation && activeBorrowRequest.status === 'active' && 'Currently Borrowed'}

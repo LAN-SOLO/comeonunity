@@ -60,13 +60,20 @@ export function OwnerReservationForm({
 
     setIsSubmitting(true)
     try {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const startDateOnly = new Date(startDate)
+      startDateOnly.setHours(0, 0, 0, 0)
+
+      const isFutureReservation = startDateOnly > today
+
       // Create a reservation (borrow request where owner is the borrower)
       const { error } = await supabase
         .from('borrow_requests')
         .insert({
           item_id: itemId,
           borrower_id: currentMemberId,
-          status: 'active',
+          status: isFutureReservation ? 'approved' : 'active',
           start_date: startDate.toISOString().split('T')[0],
           end_date: endDate.toISOString().split('T')[0],
           message: reason.trim() || 'Owner reservation',
@@ -76,13 +83,17 @@ export function OwnerReservationForm({
 
       if (error) throw error
 
-      // Update item status to borrowed
-      await supabase
-        .from('items')
-        .update({ status: 'borrowed' })
-        .eq('id', itemId)
+      // Only update item status if reservation starts today or earlier
+      if (!isFutureReservation) {
+        await supabase
+          .from('items')
+          .update({ status: 'borrowed' })
+          .eq('id', itemId)
+      }
 
-      toast.success('Item marked as unavailable')
+      toast.success(isFutureReservation
+        ? 'Reservation scheduled'
+        : 'Item marked as unavailable')
       router.refresh()
       setIsExpanded(false)
       setReason('')
