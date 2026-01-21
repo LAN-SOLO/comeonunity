@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -43,10 +44,12 @@ export function NewsCard({ article, communityId, variant = 'card' }: NewsCardPro
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
           <div className="relative aspect-[2/1] bg-muted">
             {article.image_url ? (
-              <img
+              <Image
                 src={article.image_url}
                 alt={article.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 600px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
@@ -123,10 +126,12 @@ export function NewsCard({ article, communityId, variant = 'card' }: NewsCardPro
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
         <div className="relative aspect-video bg-muted">
           {article.image_url ? (
-            <img
+            <Image
               src={article.image_url}
               alt={article.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 300px"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">

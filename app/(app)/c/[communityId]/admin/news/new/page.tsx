@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -231,11 +232,13 @@ export default function NewNewsPage() {
       <SectionHeader title="Cover Image" />
       <Card className="p-6 mb-6">
         {imageUrl ? (
-          <div className="relative">
-            <img
+          <div className="relative h-48 rounded-lg overflow-hidden">
+            <Image
               src={imageUrl}
               alt="Cover"
-              className="w-full h-48 object-cover rounded-lg"
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
             />
             <button
               type="button"

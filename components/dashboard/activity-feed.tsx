@@ -103,24 +103,70 @@ export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
 
         const allActivities: ActivityItem[] = []
 
-        // Fetch recent items
-        const { data: items } = await supabase
-          .from('items')
-          .select(`
-            id,
-            name,
-            created_at,
-            owner:owner_id (
+        // Fetch all data in parallel
+        const [itemsResult, eventsResult, newsResult, membersResult] = await Promise.all([
+          supabase
+            .from('items')
+            .select(`
               id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq('community_id', cId)
-          .order('created_at', { ascending: false })
-          .limit(limit)
+              name,
+              created_at,
+              owner:owner_id (
+                id,
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('community_id', cId)
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          supabase
+            .from('events')
+            .select(`
+              id,
+              title,
+              created_at,
+              organizer:organizer_id (
+                id,
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('community_id', cId)
+            .neq('status', 'draft')
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          supabase
+            .from('news')
+            .select(`
+              id,
+              title,
+              published_at,
+              author:author_id (
+                id,
+                display_name,
+                avatar_url
+              )
+            `)
+            .eq('community_id', cId)
+            .eq('status', 'published')
+            .order('published_at', { ascending: false })
+            .limit(limit),
+          supabase
+            .from('community_members')
+            .select('id, display_name, avatar_url, joined_at')
+            .eq('community_id', cId)
+            .eq('status', 'active')
+            .order('joined_at', { ascending: false })
+            .limit(limit),
+        ])
 
         if (!isMountedRef.current) return
+
+        const items = itemsResult.data
+        const events = eventsResult.data
+        const news = newsResult.data
+        const members = membersResult.data
 
         items?.forEach((item) => {
           const owner = item.owner as any
@@ -134,26 +180,6 @@ export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
           })
         })
 
-        // Fetch recent events
-        const { data: events } = await supabase
-          .from('events')
-          .select(`
-            id,
-            title,
-            created_at,
-            organizer:organizer_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq('community_id', cId)
-          .neq('status', 'draft')
-          .order('created_at', { ascending: false })
-          .limit(limit)
-
-        if (!isMountedRef.current) return
-
         events?.forEach((event) => {
           const organizer = event.organizer as any
           allActivities.push({
@@ -166,26 +192,6 @@ export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
           })
         })
 
-        // Fetch recent news
-        const { data: news } = await supabase
-          .from('news')
-          .select(`
-            id,
-            title,
-            published_at,
-            author:author_id (
-              id,
-              display_name,
-              avatar_url
-            )
-          `)
-          .eq('community_id', cId)
-          .eq('status', 'published')
-          .order('published_at', { ascending: false })
-          .limit(limit)
-
-        if (!isMountedRef.current) return
-
         news?.forEach((article) => {
           const author = article.author as any
           allActivities.push({
@@ -197,17 +203,6 @@ export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
             actor: author,
           })
         })
-
-        // Fetch recent members
-        const { data: members } = await supabase
-          .from('community_members')
-          .select('id, display_name, avatar_url, joined_at')
-          .eq('community_id', cId)
-          .eq('status', 'active')
-          .order('joined_at', { ascending: false })
-          .limit(limit)
-
-        if (!isMountedRef.current) return
 
         members?.forEach((member) => {
           allActivities.push({

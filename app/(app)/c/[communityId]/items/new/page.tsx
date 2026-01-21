@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -287,10 +288,12 @@ export default function NewItemPage() {
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
             {images.map((image, index) => (
               <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                <img
+                <Image
                   src={image}
                   alt={`Item ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 33vw, 20vw"
+                  className="object-cover"
                 />
                 <button
                   type="button"

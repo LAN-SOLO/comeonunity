@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -68,12 +69,14 @@ export function ItemCard({ item, communityId, variant = 'card' }: ItemCardProps)
     return (
       <Link href={`/c/${communityId}/items/${item.id}`}>
         <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0">
-          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
+          <div className="relative w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
             {item.images && item.images[0] ? (
-              <img
+              <Image
                 src={item.images[0]}
                 alt={item.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="64px"
               />
             ) : (
               <Package className="h-6 w-6 text-muted-foreground" />
@@ -112,12 +115,14 @@ export function ItemCard({ item, communityId, variant = 'card' }: ItemCardProps)
   return (
     <Link href={`/c/${communityId}/items/${item.id}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
-        <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-square bg-muted flex items-center justify-center overflow-hidden">
           {item.images && item.images[0] ? (
-            <img
+            <Image
               src={item.images[0]}
               alt={item.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 300px"
             />
           ) : (
             <Package className="h-12 w-12 text-muted-foreground" />

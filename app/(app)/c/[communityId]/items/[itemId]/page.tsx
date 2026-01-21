@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -166,12 +167,14 @@ export default async function ItemDetailPage({ params }: Props) {
         {/* Image Gallery */}
         <div>
           <Card className="overflow-hidden">
-            <div className="aspect-square bg-muted flex items-center justify-center">
+            <div className="aspect-square bg-muted flex items-center justify-center relative">
               {item.images && item.images[0] ? (
-                <img
+                <Image
                   src={item.images[0]}
                   alt={item.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
                 />
               ) : (
                 <Package className="h-24 w-24 text-muted-foreground opacity-50" />
@@ -182,12 +185,14 @@ export default async function ItemDetailPage({ params }: Props) {
                 {item.images.slice(1).map((image: string, index: number) => (
                   <div
                     key={index}
-                    className="w-20 h-20 rounded-lg bg-muted flex-shrink-0 overflow-hidden"
+                    className="w-20 h-20 rounded-lg bg-muted flex-shrink-0 overflow-hidden relative"
                   >
-                    <img
+                    <Image
                       src={image}
                       alt={`${item.name} ${index + 2}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
                     />
                   </div>
                 ))}

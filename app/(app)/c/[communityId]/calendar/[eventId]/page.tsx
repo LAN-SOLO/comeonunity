@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
@@ -308,11 +309,13 @@ export default async function EventDetailPage({ params }: Props) {
 
       {/* Cover image */}
       {event.cover_image_url && (
-        <div className="mb-6 rounded-lg overflow-hidden">
-          <img
+        <div className="mb-6 rounded-lg overflow-hidden relative h-64">
+          <Image
             src={event.cover_image_url}
             alt={event.title}
-            className="w-full h-64 object-cover"
+            fill
+            sizes="(max-width: 1024px) 100vw, 1024px"
+            className="object-cover"
           />
         </div>
       )}

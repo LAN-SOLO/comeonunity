@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CommandDialog,
@@ -36,6 +36,22 @@ interface SearchResult {
 
 interface SearchCommandProps {
   communityId?: string // Optional - if not provided, searches across all user's communities
+}
+
+// Helper function moved outside component - no dependency on props/state
+const getIcon = (type: SearchResult['type']) => {
+  switch (type) {
+    case 'member':
+      return User
+    case 'item':
+      return Package
+    case 'event':
+      return Calendar
+    case 'news':
+      return Newspaper
+    case 'resource':
+      return Boxes
+  }
 }
 
 export function SearchCommand({ communityId }: SearchCommandProps) {
@@ -102,26 +118,11 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
     return () => clearTimeout(timer)
   }, [query, search])
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = useCallback((result: SearchResult) => {
     setOpen(false)
     setQuery('')
     router.push(result.href)
-  }
-
-  const getIcon = (type: SearchResult['type']) => {
-    switch (type) {
-      case 'member':
-        return User
-      case 'item':
-        return Package
-      case 'event':
-        return Calendar
-      case 'news':
-        return Newspaper
-      case 'resource':
-        return Boxes
-    }
-  }
+  }, [router])
 
   const getInitials = (name: string) => {
     return name
@@ -132,12 +133,14 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
       .slice(0, 2)
   }
 
-  // Group results by type
-  const memberResults = results.filter((r) => r.type === 'member')
-  const itemResults = results.filter((r) => r.type === 'item')
-  const eventResults = results.filter((r) => r.type === 'event')
-  const newsResults = results.filter((r) => r.type === 'news')
-  const resourceResults = results.filter((r) => r.type === 'resource')
+  // Group results by type - memoized to avoid recalculating on every render
+  const { memberResults, itemResults, eventResults, newsResults, resourceResults } = useMemo(() => ({
+    memberResults: results.filter((r) => r.type === 'member'),
+    itemResults: results.filter((r) => r.type === 'item'),
+    eventResults: results.filter((r) => r.type === 'event'),
+    newsResults: results.filter((r) => r.type === 'news'),
+    resourceResults: results.filter((r) => r.type === 'resource'),
+  }), [results])
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>

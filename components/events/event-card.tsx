@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -152,11 +153,13 @@ export function EventCard({ event, communityId, variant = 'card' }: EventCardPro
         )}
       >
         {event.cover_image_url && (
-          <div className="h-32 overflow-hidden">
-            <img
+          <div className="relative h-32 overflow-hidden">
+            <Image
               src={event.cover_image_url}
               alt={event.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 300px"
             />
           </div>
         )}

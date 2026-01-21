@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -290,12 +291,14 @@ export default function BorrowRequestPage() {
       {/* Item Summary */}
       <Card className="p-4 mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
+          <div className="relative w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
             {item.images && item.images[0] ? (
-              <img
+              <Image
                 src={item.images[0]}
                 alt={item.name}
-                className="w-full h-full object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
               />
             ) : (
               <Package className="h-6 w-6 text-muted-foreground" />

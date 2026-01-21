@@ -9,7 +9,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Sun, Moon, Monitor, Check } from 'lucide-react'
+import { Sun, Moon, Monitor, Check, LucideIcon } from 'lucide-react'
+
+interface ThemeOption {
+  value: string
+  label: string
+  icon: LucideIcon
+}
+
+const themes: ThemeOption[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
+]
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -74,12 +86,6 @@ export function ThemeToggleInline() {
   if (!mounted) {
     return null
   }
-
-  const themes = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
-  ]
 
   return (
     <div className="flex items-center justify-between px-2 py-1.5">

@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
@@ -293,11 +294,13 @@ export default async function NewsArticlePage({ params }: Props) {
 
         {/* Featured Image */}
         {article.image_url && (
-          <div className="mb-8">
-            <img
+          <div className="mb-8 relative w-full h-[400px]">
+            <Image
               src={article.image_url}
               alt={article.title}
-              className="w-full rounded-lg object-cover max-h-[400px]"
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="rounded-lg object-cover"
             />
           </div>
         )}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -206,18 +207,22 @@ export default function MyBookingsPage() {
     return (
       <Card key={booking.id} className="p-4">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
+          <div className="relative w-16 h-16 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0">
             {isResource && booking.resource?.image_url ? (
-              <img
+              <Image
                 src={booking.resource.image_url}
                 alt={name || ''}
-                className="w-full h-full object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
               />
             ) : !isResource && booking.item?.images?.[0] ? (
-              <img
+              <Image
                 src={booking.item.images[0]}
                 alt={name || ''}
-                className="w-full h-full object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
               />
             ) : (
               <Icon className="h-6 w-6 text-muted-foreground" />

@@ -167,130 +167,139 @@ async function fallbackSearch(
 
   const perTypeLimit = Math.ceil(limit / types.length)
 
-  // Search each type
-  if (types.includes('member')) {
-    const { data: members } = await supabase
-      .from('community_members')
-      .select('id, display_name, avatar_url, role, community_id')
-      .or(communityFilter)
-      .eq('status', 'active')
-      .or(`display_name.ilike.${searchTerm},bio.ilike.${searchTerm}`)
-      .limit(perTypeLimit)
+  // Search all types in parallel
+  const [membersResult, itemsResult, eventsResult, newsResult, resourcesResult] = await Promise.all([
+    types.includes('member')
+      ? supabase
+          .from('community_members')
+          .select('id, display_name, avatar_url, role, community_id')
+          .or(communityFilter)
+          .eq('status', 'active')
+          .or(`display_name.ilike.${searchTerm},bio.ilike.${searchTerm}`)
+          .limit(perTypeLimit)
+      : Promise.resolve({ data: null }),
+    types.includes('item')
+      ? supabase
+          .from('items')
+          .select('id, name, category, status, community_id')
+          .or(communityFilter)
+          .neq('status', 'unavailable')
+          .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
+          .limit(perTypeLimit)
+      : Promise.resolve({ data: null }),
+    types.includes('event')
+      ? supabase
+          .from('events')
+          .select('id, title, starts_at, location, community_id')
+          .or(communityFilter)
+          .neq('status', 'draft')
+          .neq('status', 'cancelled')
+          .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},location.ilike.${searchTerm}`)
+          .limit(perTypeLimit)
+      : Promise.resolve({ data: null }),
+    types.includes('news')
+      ? supabase
+          .from('news')
+          .select('id, title, category, published_at, community_id')
+          .or(communityFilter)
+          .eq('status', 'published')
+          .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},excerpt.ilike.${searchTerm}`)
+          .order('published_at', { ascending: false })
+          .limit(perTypeLimit)
+      : Promise.resolve({ data: null }),
+    types.includes('resource')
+      ? supabase
+          .from('resources')
+          .select('id, name, type, community_id')
+          .or(communityFilter)
+          .eq('status', 'active')
+          .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
+          .limit(perTypeLimit)
+      : Promise.resolve({ data: null }),
+  ])
 
-    members?.forEach((m: any) => {
-      const community = communityMap.get(m.community_id)
-      results.push({
-        type: 'member',
-        id: m.id,
-        title: m.display_name || 'Unknown',
-        subtitle: m.role,
-        image: m.avatar_url,
-        href: `/c/${community?.slug || m.community_id}/members/${m.id}`,
-        communityId: m.community_id,
-        communityName: communityIds.length > 1 ? community?.name : undefined,
-        communitySlug: community?.slug || m.community_id,
-      })
+  const members = membersResult.data
+  const items = itemsResult.data
+  const events = eventsResult.data
+  const news = newsResult.data
+  const resources = resourcesResult.data
+
+  // Process members
+  members?.forEach((m: any) => {
+    const community = communityMap.get(m.community_id)
+    results.push({
+      type: 'member',
+      id: m.id,
+      title: m.display_name || 'Unknown',
+      subtitle: m.role,
+      image: m.avatar_url,
+      href: `/c/${community?.slug || m.community_id}/members/${m.id}`,
+      communityId: m.community_id,
+      communityName: communityIds.length > 1 ? community?.name : undefined,
+      communitySlug: community?.slug || m.community_id,
     })
-  }
+  })
 
-  if (types.includes('item')) {
-    const { data: items } = await supabase
-      .from('items')
-      .select('id, name, category, status, community_id')
-      .or(communityFilter)
-      .neq('status', 'unavailable')
-      .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
-      .limit(perTypeLimit)
-
-    items?.forEach((i: any) => {
-      const community = communityMap.get(i.community_id)
-      results.push({
-        type: 'item',
-        id: i.id,
-        title: i.name,
-        subtitle: `${i.category} • ${i.status}`,
-        href: `/c/${community?.slug || i.community_id}/items/${i.id}`,
-        communityId: i.community_id,
-        communityName: communityIds.length > 1 ? community?.name : undefined,
-        communitySlug: community?.slug || i.community_id,
-      })
+  // Process items
+  items?.forEach((i: any) => {
+    const community = communityMap.get(i.community_id)
+    results.push({
+      type: 'item',
+      id: i.id,
+      title: i.name,
+      subtitle: `${i.category} • ${i.status}`,
+      href: `/c/${community?.slug || i.community_id}/items/${i.id}`,
+      communityId: i.community_id,
+      communityName: communityIds.length > 1 ? community?.name : undefined,
+      communitySlug: community?.slug || i.community_id,
     })
-  }
+  })
 
-  if (types.includes('event')) {
-    const { data: events } = await supabase
-      .from('events')
-      .select('id, title, starts_at, location, community_id')
-      .or(communityFilter)
-      .neq('status', 'draft')
-      .neq('status', 'cancelled')
-      .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},location.ilike.${searchTerm}`)
-      .limit(perTypeLimit)
-
-    events?.forEach((e: any) => {
-      const community = communityMap.get(e.community_id)
-      const date = new Date(e.starts_at)
-      results.push({
-        type: 'event',
-        id: e.id,
-        title: e.title,
-        subtitle: `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${e.location ? ` • ${e.location}` : ''}`,
-        href: `/c/${community?.slug || e.community_id}/calendar/${e.id}`,
-        communityId: e.community_id,
-        communityName: communityIds.length > 1 ? community?.name : undefined,
-        communitySlug: community?.slug || e.community_id,
-      })
+  // Process events
+  events?.forEach((e: any) => {
+    const community = communityMap.get(e.community_id)
+    const date = new Date(e.starts_at)
+    results.push({
+      type: 'event',
+      id: e.id,
+      title: e.title,
+      subtitle: `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}${e.location ? ` • ${e.location}` : ''}`,
+      href: `/c/${community?.slug || e.community_id}/calendar/${e.id}`,
+      communityId: e.community_id,
+      communityName: communityIds.length > 1 ? community?.name : undefined,
+      communitySlug: community?.slug || e.community_id,
     })
-  }
+  })
 
-  if (types.includes('news')) {
-    const { data: news } = await supabase
-      .from('news')
-      .select('id, title, category, published_at, community_id')
-      .or(communityFilter)
-      .eq('status', 'published')
-      .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},excerpt.ilike.${searchTerm}`)
-      .order('published_at', { ascending: false })
-      .limit(perTypeLimit)
-
-    news?.forEach((n: any) => {
-      const community = communityMap.get(n.community_id)
-      results.push({
-        type: 'news',
-        id: n.id,
-        title: n.title,
-        subtitle: n.category,
-        href: `/c/${community?.slug || n.community_id}/news/${n.id}`,
-        communityId: n.community_id,
-        communityName: communityIds.length > 1 ? community?.name : undefined,
-        communitySlug: community?.slug || n.community_id,
-      })
+  // Process news
+  news?.forEach((n: any) => {
+    const community = communityMap.get(n.community_id)
+    results.push({
+      type: 'news',
+      id: n.id,
+      title: n.title,
+      subtitle: n.category,
+      href: `/c/${community?.slug || n.community_id}/news/${n.id}`,
+      communityId: n.community_id,
+      communityName: communityIds.length > 1 ? community?.name : undefined,
+      communitySlug: community?.slug || n.community_id,
     })
-  }
+  })
 
-  if (types.includes('resource')) {
-    const { data: resources } = await supabase
-      .from('resources')
-      .select('id, name, type, community_id')
-      .or(communityFilter)
-      .eq('status', 'active')
-      .or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
-      .limit(perTypeLimit)
-
-    resources?.forEach((r: any) => {
-      const community = communityMap.get(r.community_id)
-      results.push({
-        type: 'resource',
-        id: r.id,
-        title: r.name,
-        subtitle: r.type,
-        href: `/c/${community?.slug || r.community_id}/resources/${r.id}`,
-        communityId: r.community_id,
-        communityName: communityIds.length > 1 ? community?.name : undefined,
-        communitySlug: community?.slug || r.community_id,
-      })
+  // Process resources
+  resources?.forEach((r: any) => {
+    const community = communityMap.get(r.community_id)
+    results.push({
+      type: 'resource',
+      id: r.id,
+      title: r.name,
+      subtitle: r.type,
+      href: `/c/${community?.slug || r.community_id}/resources/${r.id}`,
+      communityId: r.community_id,
+      communityName: communityIds.length > 1 ? community?.name : undefined,
+      communitySlug: community?.slug || r.community_id,
     })
-  }
+  })
 
   return NextResponse.json({ results: results.slice(0, limit) })
 }

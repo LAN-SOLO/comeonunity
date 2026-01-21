@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -335,12 +336,14 @@ export default function ResourceDetailPage() {
         {/* Resource Info */}
         <div>
           <Card className="overflow-hidden mb-6">
-            <div className="aspect-video bg-muted flex items-center justify-center">
+            <div className="aspect-video bg-muted flex items-center justify-center relative">
               {resource.image_url ? (
-                <img
+                <Image
                   src={resource.image_url}
                   alt={resource.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
                 />
               ) : (
                 <Icon className="h-16 w-16 text-muted-foreground opacity-50" />

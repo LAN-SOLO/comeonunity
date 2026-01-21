@@ -12,7 +12,42 @@ import {
   X,
   ChevronRight,
   Sparkles,
+  LucideIcon,
 } from 'lucide-react'
+
+interface QuickStartItem {
+  icon: LucideIcon
+  label: string
+  description: string
+  getHref: (communityId: string) => string
+}
+
+const quickStartItems: QuickStartItem[] = [
+  {
+    icon: Users,
+    label: 'Browse Members',
+    description: 'See who is in your community',
+    getHref: (communityId) => `/c/${communityId}/members`,
+  },
+  {
+    icon: Package,
+    label: 'Explore Items',
+    description: 'Find items to borrow',
+    getHref: (communityId) => `/c/${communityId}/items`,
+  },
+  {
+    icon: Calendar,
+    label: 'View Events',
+    description: 'See upcoming community events',
+    getHref: (communityId) => `/c/${communityId}/calendar`,
+  },
+  {
+    icon: Settings,
+    label: 'Edit Profile',
+    description: 'Complete your profile',
+    getHref: (communityId) => `/c/${communityId}/members/me/edit`,
+  },
+]
 
 interface WelcomeBannerProps {
   communityId: string
@@ -24,33 +59,6 @@ export function WelcomeBanner({ communityId, memberName, isNewMember = false }: 
   const [isDismissed, setIsDismissed] = useState(false)
 
   if (isDismissed) return null
-
-  const quickStartItems = [
-    {
-      icon: Users,
-      label: 'Browse Members',
-      description: 'See who is in your community',
-      href: `/c/${communityId}/members`,
-    },
-    {
-      icon: Package,
-      label: 'Explore Items',
-      description: 'Find items to borrow',
-      href: `/c/${communityId}/items`,
-    },
-    {
-      icon: Calendar,
-      label: 'View Events',
-      description: 'See upcoming community events',
-      href: `/c/${communityId}/calendar`,
-    },
-    {
-      icon: Settings,
-      label: 'Edit Profile',
-      description: 'Complete your profile',
-      href: `/c/${communityId}/members/me/edit`,
-    },
-  ]
 
   return (
     <Card className="relative overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20">
@@ -83,8 +91,8 @@ export function WelcomeBanner({ communityId, memberName, isNewMember = false }: 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {quickStartItems.map((item) => (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.label}
+              href={item.getHref(communityId)}
               className="flex items-center gap-3 p-3 rounded-lg bg-background/50 hover:bg-background transition-colors group"
             >
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -49,16 +49,17 @@ export function MobileNav() {
 
   const communityIdFromPath = pathname.match(/\/c\/([^/]+)/)?.[1]
 
-  const navItems: NavItem[] = [
-    { label: 'Dashboard', href: `/c/${communityIdFromPath}`, icon: Home },
-    { label: 'Members', href: `/c/${communityIdFromPath}/members`, icon: Users },
-    { label: 'Items', href: `/c/${communityIdFromPath}/items`, icon: Package },
-    { label: 'Calendar', href: `/c/${communityIdFromPath}/calendar`, icon: Calendar },
-    { label: 'News', href: `/c/${communityIdFromPath}/news`, icon: Newspaper },
-    { label: 'Admin', href: `/c/${communityIdFromPath}/admin`, icon: Shield, adminOnly: true },
-  ]
-
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin)
+  const filteredNavItems = useMemo(() => {
+    const navItems: NavItem[] = [
+      { label: 'Dashboard', href: `/c/${communityIdFromPath}`, icon: Home },
+      { label: 'Members', href: `/c/${communityIdFromPath}/members`, icon: Users },
+      { label: 'Items', href: `/c/${communityIdFromPath}/items`, icon: Package },
+      { label: 'Calendar', href: `/c/${communityIdFromPath}/calendar`, icon: Calendar },
+      { label: 'News', href: `/c/${communityIdFromPath}/news`, icon: Newspaper },
+      { label: 'Admin', href: `/c/${communityIdFromPath}/admin`, icon: Shield, adminOnly: true },
+    ]
+    return navItems.filter(item => !item.adminOnly || isAdmin)
+  }, [communityIdFromPath, isAdmin])
 
   return (
     <header className="lg:hidden sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

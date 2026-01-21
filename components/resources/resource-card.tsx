@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -67,12 +68,14 @@ export function ResourceCard({ resource, communityId, nextAvailable }: ResourceC
   return (
     <Link href={`/c/${communityId}/resources/${resource.id}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
-        <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
           {resource.image_url ? (
-            <img
+            <Image
               src={resource.image_url}
               alt={resource.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 300px"
             />
           ) : (
             <Icon className="h-12 w-12 text-muted-foreground opacity-50" />

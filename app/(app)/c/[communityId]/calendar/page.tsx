@@ -170,41 +170,48 @@ export default function CalendarPage() {
 
       if (error) throw error
 
-      // Get RSVP counts and user's RSVP status (only for members)
-      const eventsWithRsvp = await Promise.all(
-        (eventsData || []).map(async (event) => {
-          let rsvpCount = 0
-          let userRsvp = null
+      // Batch fetch RSVP counts and user's RSVP status (only for members)
+      const eventIds = eventsData?.map(e => e.id) || []
 
-          // Only query RSVPs if user is a member (RLS requires auth)
-          if (member) {
-            const [countResult, userRsvpResult] = await Promise.all([
-              supabase
-                .from('event_rsvps')
-                .select('id', { count: 'exact', head: true })
-                .eq('event_id', event.id)
-                .eq('status', 'going'),
-              supabase
-                .from('event_rsvps')
-                .select('status')
-                .eq('event_id', event.id)
-                .eq('member_id', member.id)
-                .maybeSingle(),
-            ])
-            rsvpCount = countResult.count || 0
-            userRsvp = userRsvpResult.data?.status || null
-          }
+      // Initialize maps for RSVP data
+      const rsvpCountMap = new Map<string, number>()
+      const userRsvpMap = new Map<string, string>()
 
-          return {
-            ...event,
-            organizer: Array.isArray(event.organizer)
-              ? event.organizer[0] || null
-              : event.organizer as Event['organizer'],
-            rsvp_count: rsvpCount,
-            user_rsvp: userRsvp,
-          }
+      // Only query RSVPs if user is a member (RLS requires auth) and there are events
+      if (member && eventIds.length > 0) {
+        const [rsvpCountsResult, userRsvpsResult] = await Promise.all([
+          supabase
+            .from('event_rsvps')
+            .select('event_id')
+            .in('event_id', eventIds)
+            .eq('status', 'going'),
+          supabase
+            .from('event_rsvps')
+            .select('event_id, status')
+            .in('event_id', eventIds)
+            .eq('member_id', member.id)
+        ])
+
+        // Build RSVP count map
+        rsvpCountsResult.data?.forEach(rsvp => {
+          rsvpCountMap.set(rsvp.event_id, (rsvpCountMap.get(rsvp.event_id) || 0) + 1)
         })
-      )
+
+        // Build user RSVP map
+        userRsvpsResult.data?.forEach(rsvp => {
+          userRsvpMap.set(rsvp.event_id, rsvp.status)
+        })
+      }
+
+      // Map events with RSVP data
+      const eventsWithRsvp = (eventsData || []).map(event => ({
+        ...event,
+        organizer: Array.isArray(event.organizer)
+          ? event.organizer[0] || null
+          : event.organizer as Event['organizer'],
+        rsvp_count: rsvpCountMap.get(event.id) || 0,
+        user_rsvp: userRsvpMap.get(event.id) || null,
+      }))
 
       setEvents(eventsWithRsvp)
     } catch {
