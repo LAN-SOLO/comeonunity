@@ -276,7 +276,7 @@ export default async function ItemDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Owner reservation form */}
+          {/* Owner booking/reservation form */}
           {isOwner && item.status === 'available' && !activeBorrowRequest && (
             <div className="mb-6">
               <OwnerReservationForm

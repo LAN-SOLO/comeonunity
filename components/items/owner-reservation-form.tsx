@@ -16,7 +16,6 @@ import {
 import {
   CalendarIcon,
   Loader2,
-  Lock,
   ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -112,20 +111,19 @@ export function OwnerReservationForm({
   if (!isExpanded) {
     return (
       <Button
-        variant="outline"
         className="w-full"
         onClick={() => setIsExpanded(true)}
       >
-        <Lock className="h-4 w-4 mr-2" />
-        Mark as Unavailable
+        <CalendarIcon className="h-4 w-4 mr-2" />
+        Book Item
       </Button>
     )
   }
 
   return (
-    <Card className="p-4 border-muted">
+    <Card className="p-4 border-primary/50">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">Reserve Item</h3>
+        <h3 className="font-semibold">Book Your Item</h3>
         <Button
           variant="ghost"
           size="sm"
@@ -136,7 +134,7 @@ export function OwnerReservationForm({
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        Block out dates when your item is unavailable for borrowing.
+        Reserve dates when this item is unavailable for borrowing.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -227,12 +225,12 @@ export function OwnerReservationForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Saving...
+                Booking...
               </>
             ) : (
               <>
-                <Lock className="mr-2 h-3 w-3" />
-                Mark Unavailable
+                <CalendarIcon className="mr-2 h-3 w-3" />
+                Book
               </>
             )}
           </Button>
