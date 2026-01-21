@@ -21,14 +21,14 @@ export default function AuthLayout({
       {/* Footer */}
       <footer className="absolute bottom-0 left-0 right-0 p-6">
         <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+          <Link href="/imprint" className="hover:text-foreground transition-colors">
+            Impressum
+          </Link>
           <Link href="/privacy" className="hover:text-foreground transition-colors">
-            Privacy Policy
+            Datenschutz
           </Link>
           <Link href="/terms" className="hover:text-foreground transition-colors">
-            Terms of Service
-          </Link>
-          <Link href="/help" className="hover:text-foreground transition-colors">
-            Help
+            Nutzungsbedingungen
           </Link>
         </div>
       </footer>

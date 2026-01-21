@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+// Native img tags used for logo/cover to handle dynamic Supabase URLs reliably
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -163,6 +163,12 @@ export default function CommunitySettingsPage() {
   const fetchCommunity = async () => {
     setIsLoading(true)
     try {
+      // Check authentication first
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        throw new Error('Not authenticated')
+      }
+
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(communitySlug)
 
       let communityQuery = supabase
@@ -233,9 +239,9 @@ export default function CommunitySettingsPage() {
       setShowActivityFeed(display.show_activity_feed ?? true)
       setShowQuickStats(display.show_quick_stats ?? true)
 
-    } catch (err) {
-      console.error('Failed to fetch community:', err)
-      toast.error('Failed to load community settings')
+    } catch (err: any) {
+      console.error('Failed to fetch community:', err?.message || err?.code || JSON.stringify(err))
+      toast.error(err?.message || 'Failed to load community settings')
     } finally {
       setIsLoading(false)
     }
@@ -632,49 +638,57 @@ export default function CommunitySettingsPage() {
               {/* Logo */}
               <div className="space-y-3">
                 <Label>Community Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center bg-muted/50 overflow-hidden relative">
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center bg-muted/50 overflow-hidden relative shrink-0">
                     {logoUrl ? (
-                      <>
-                        <Image
-                          src={logoUrl}
-                          alt="Logo"
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setLogoUrl(null)}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </>
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={logoUrl}
+                        alt="Logo"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={() => {
+                          console.error('Logo failed to load:', logoUrl)
+                          setLogoUrl(null)
+                          toast.error('Logo could not be loaded')
+                        }}
+                      />
                     ) : (
                       <Building2 className="h-8 w-8 text-muted-foreground" />
                     )}
                   </div>
-                  <div>
-                    <label className="cursor-pointer">
-                      <Button variant="outline" size="sm" asChild disabled={isUploadingLogo}>
-                        <span>
-                          {isUploadingLogo ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4 mr-2" />
-                          )}
-                          Upload Logo
-                        </span>
-                      </Button>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                        disabled={isUploadingLogo}
-                      />
-                    </label>
-                    <p className="text-xs text-muted-foreground mt-1">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <label className="cursor-pointer">
+                        <Button variant="outline" size="sm" asChild disabled={isUploadingLogo}>
+                          <span>
+                            {isUploadingLogo ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {logoUrl ? 'Change Logo' : 'Upload Logo'}
+                          </span>
+                        </Button>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleLogoChange}
+                          className="hidden"
+                          disabled={isUploadingLogo}
+                        />
+                      </label>
+                      {logoUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLogoUrl(null)}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
                       Square image, max 5MB
                     </p>
                   </div>
@@ -683,52 +697,85 @@ export default function CommunitySettingsPage() {
 
               {/* Cover Image */}
               <div className="space-y-3">
-                <Label>Cover Image</Label>
-                <div className="relative aspect-[3/1] rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center bg-muted/50 overflow-hidden">
+                <Label>Cover Image {coverImageUrl && <span className="text-xs text-muted-foreground ml-2">(URL loaded)</span>}</Label>
+                <div
+                  className="relative rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 overflow-hidden"
+                  style={{ minHeight: '150px', aspectRatio: '3/1' }}
+                >
                   {coverImageUrl ? (
-                    <>
-                      <Image
-                        src={coverImageUrl}
-                        alt="Cover"
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCoverImageUrl(null)}
-                        className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </>
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={coverImageUrl}
+                      alt="Cover"
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      onLoad={() => console.log('Cover image loaded successfully:', coverImageUrl)}
+                      onError={(e) => {
+                        console.error('Cover image failed to load:', coverImageUrl, e)
+                        setCoverImageUrl(null)
+                        toast.error('Cover image could not be loaded')
+                      }}
+                    />
                   ) : (
-                    <div className="text-center">
-                      <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                      <label className="cursor-pointer">
-                        <Button variant="outline" size="sm" asChild disabled={isUploadingCover}>
-                          <span>
-                            {isUploadingCover ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                              <Upload className="h-4 w-4 mr-2" />
-                            )}
-                            Upload Cover
-                          </span>
-                        </Button>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleCoverChange}
-                          className="hidden"
-                          disabled={isUploadingCover}
-                        />
-                      </label>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Recommended: 1200 x 400 px
-                      </p>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <ImageIcon className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <label className="cursor-pointer">
+                          <Button variant="outline" size="sm" asChild disabled={isUploadingCover}>
+                            <span>
+                              {isUploadingCover ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Upload className="h-4 w-4 mr-2" />
+                              )}
+                              Upload Cover
+                            </span>
+                          </Button>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={handleCoverChange}
+                            className="hidden"
+                            disabled={isUploadingCover}
+                          />
+                        </label>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Recommended: 1200 x 400 px
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
+                {coverImageUrl ? (
+                  <div className="flex gap-2">
+                    <label className="cursor-pointer">
+                      <Button variant="outline" size="sm" asChild disabled={isUploadingCover}>
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Change Cover
+                        </span>
+                      </Button>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleCoverChange}
+                        className="hidden"
+                        disabled={isUploadingCover}
+                      />
+                    </label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCoverImageUrl(null)}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Delete Cover
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: 1200 x 400 px, max 5MB
+                  </p>
+                )}
               </div>
             </div>
           </Card>
