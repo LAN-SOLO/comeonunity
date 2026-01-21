@@ -19,6 +19,8 @@ import {
   XCircle,
 } from 'lucide-react'
 import { BorrowRequestForm } from '@/components/items/borrow-request-form'
+import { OwnerReservationForm } from '@/components/items/owner-reservation-form'
+import { EndReservationButton } from '@/components/items/end-reservation-button'
 import { categoryLabels, statusColors, statusLabels } from '@/components/items/item-card'
 
 interface Props {
@@ -274,36 +276,52 @@ export default async function ItemDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Owner notice */}
+          {/* Owner reservation form */}
           {isOwner && item.status === 'available' && !activeBorrowRequest && (
-            <Card className="p-4 mb-6 bg-muted/50 text-center">
-              <p className="text-sm text-muted-foreground">
-                This is your item. Other members can request to borrow it.
-              </p>
-            </Card>
+            <div className="mb-6">
+              <OwnerReservationForm
+                itemId={itemId}
+                itemName={item.name}
+                communityId={community.id}
+                currentMemberId={currentMember.id}
+              />
+            </div>
           )}
 
           {/* Active Booking Info */}
-          {activeBorrowRequest && (
-            <Card className="p-4 mb-6 border-amber-500/50 bg-amber-500/5">
-              <h3 className="font-medium mb-2 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-500" />
-                {activeBorrowRequest.status === 'pending' && 'Pending Request'}
-                {activeBorrowRequest.status === 'approved' && 'Approved Booking'}
-                {activeBorrowRequest.status === 'active' && 'Currently Borrowed'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {new Date(activeBorrowRequest.start_date).toLocaleDateString()} - {new Date(activeBorrowRequest.end_date).toLocaleDateString()}
-              </p>
-              {isOwner && (
-                <Button variant="outline" size="sm" className="mt-3" asChild>
-                  <Link href={`/c/${community.slug}/items/${itemId}/requests`}>
-                    View Requests
-                  </Link>
-                </Button>
-              )}
-            </Card>
-          )}
+          {activeBorrowRequest && (() => {
+            const borrower = activeBorrowRequest.borrower as any
+            const isOwnerReservation = isOwner && borrower?.id === currentMember.id
+
+            return (
+              <Card className={`p-4 mb-6 ${isOwnerReservation ? 'border-muted bg-muted/50' : 'border-amber-500/50 bg-amber-500/5'}`}>
+                <h3 className="font-medium mb-2 flex items-center gap-2">
+                  <Clock className={`h-4 w-4 ${isOwnerReservation ? 'text-muted-foreground' : 'text-amber-500'}`} />
+                  {isOwnerReservation && 'Reserved by You'}
+                  {!isOwnerReservation && activeBorrowRequest.status === 'pending' && 'Pending Request'}
+                  {!isOwnerReservation && activeBorrowRequest.status === 'approved' && 'Approved Booking'}
+                  {!isOwnerReservation && activeBorrowRequest.status === 'active' && 'Currently Borrowed'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(activeBorrowRequest.start_date).toLocaleDateString()} - {new Date(activeBorrowRequest.end_date).toLocaleDateString()}
+                </p>
+                {isOwnerReservation ? (
+                  <div className="mt-3">
+                    <EndReservationButton
+                      borrowRequestId={activeBorrowRequest.id}
+                      itemId={itemId}
+                    />
+                  </div>
+                ) : isOwner ? (
+                  <Button variant="outline" size="sm" className="mt-3" asChild>
+                    <Link href={`/c/${community.slug}/items/${itemId}/requests`}>
+                      View Requests
+                    </Link>
+                  </Button>
+                ) : null}
+              </Card>
+            )
+          })()}
 
           {/* Owner Card */}
           <SectionHeader title="Owner" />
