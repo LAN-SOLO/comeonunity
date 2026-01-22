@@ -218,9 +218,11 @@ export default async function HomePage() {
                 className={`${tier.popular ? 'border-primary shadow-lg' : ''}`}
               >
                 <CardHeader className="text-center pb-4">
-                  {tier.popular && (
-                    <Badge className="bg-primary text-primary-foreground mx-auto mb-2">Most Popular</Badge>
-                  )}
+                  <div className="h-6 mb-2 flex items-center justify-center">
+                    {tier.popular && (
+                      <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                    )}
+                  </div>
                   <CardTitle className="text-xl">{tier.displayName}</CardTitle>
                   <CardDescription>{tier.description}</CardDescription>
                 </CardHeader>
