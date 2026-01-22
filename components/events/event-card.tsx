@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
@@ -63,20 +64,24 @@ const typeLabels: Record<string, string> = {
   other: 'Other',
 }
 
-export function EventCard({ event, communityId, variant = 'card' }: EventCardProps) {
+function EventCardComponent({ event, communityId, variant = 'card' }: EventCardProps) {
   const Icon = typeIcons[event.type] || typeIcons.event
   const startDate = new Date(event.starts_at)
   const endDate = new Date(event.ends_at)
   const isPastEvent = isPast(endDate)
   const isCancelled = event.status === 'cancelled'
 
-  const organizerName = event.organizer?.display_name || 'Unknown'
-  const organizerInitials = organizerName
-    .split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  // Memoize organizer info to prevent recalculation
+  const { organizerName, organizerInitials } = useMemo(() => {
+    const name = event.organizer?.display_name || 'Unknown'
+    const initials = name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+    return { organizerName: name, organizerInitials: initials }
+  }, [event.organizer?.display_name])
 
   // Format date display
   const getDateDisplay = () => {
@@ -240,3 +245,6 @@ export function EventCard({ event, communityId, variant = 'card' }: EventCardPro
     </Link>
   )
 }
+
+// Memoize to prevent unnecessary re-renders when parent updates
+export const EventCard = memo(EventCardComponent)

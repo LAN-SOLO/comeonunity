@@ -57,19 +57,25 @@ export function DevModeIndicator() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className="gap-1.5 h-8 px-2 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+          size="icon"
+          className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 relative"
+          title={`Developer Mode (${isMaster ? 'Master' : 'Dev'})`}
         >
           <Code2 className="h-4 w-4" />
-          <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-orange-500/50 text-orange-500">
-            {isMaster ? 'MASTER' : 'DEV'}
-          </Badge>
+          {isMaster && (
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-orange-500" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-orange-500" />
-          Developer Mode
+        <DropdownMenuLabel className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-orange-500" />
+            Developer Mode
+          </span>
+          <Badge variant="outline" className="text-[10px] border-orange-500/50 text-orange-500">
+            {isMaster ? 'MASTER' : 'DEV'}
+          </Badge>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 

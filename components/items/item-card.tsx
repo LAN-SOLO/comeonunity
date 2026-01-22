@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
@@ -56,14 +57,18 @@ const statusLabels: Record<string, string> = {
   unavailable: 'Unavailable',
 }
 
-export function ItemCard({ item, communityId, variant = 'card' }: ItemCardProps) {
-  const ownerName = item.owner?.display_name || 'Member'
-  const ownerInitials = ownerName
-    .split(' ')
-    .map((n: string) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+function ItemCardComponent({ item, communityId, variant = 'card' }: ItemCardProps) {
+  // Memoize owner info to prevent recalculation
+  const { ownerName, ownerInitials } = useMemo(() => {
+    const name = item.owner?.display_name || 'Member'
+    const initials = name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+    return { ownerName: name, ownerInitials: initials }
+  }, [item.owner?.display_name])
 
   if (variant === 'list') {
     return (
@@ -158,5 +163,8 @@ export function ItemCard({ item, communityId, variant = 'card' }: ItemCardProps)
     </Link>
   )
 }
+
+// Memoize to prevent unnecessary re-renders when parent updates
+export const ItemCard = memo(ItemCardComponent)
 
 export { categoryLabels, statusColors, statusLabels }

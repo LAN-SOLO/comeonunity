@@ -646,6 +646,8 @@ export default function CommunitySettingsPage() {
                         src={logoUrl}
                         alt="Logo"
                         className="absolute inset-0 w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         onError={() => {
                           console.error('Logo failed to load:', logoUrl)
                           setLogoUrl(null)
@@ -707,6 +709,8 @@ export default function CommunitySettingsPage() {
                     <img
                       src={coverImageUrl}
                       alt="Cover"
+                      loading="lazy"
+                      decoding="async"
                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                       onLoad={() => console.log('Cover image loaded successfully:', coverImageUrl)}
                       onError={(e) => {

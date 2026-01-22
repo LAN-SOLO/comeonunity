@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
@@ -71,20 +72,24 @@ const skillLabels: Record<string, string> = {
   photography: 'Photography',
 }
 
-export function MemberCard({
+function MemberCardComponent({
   member,
   communityId,
   variant = 'card',
   showContact = true,
   isNew = false,
 }: MemberCardProps) {
-  const displayName = member.display_name || 'Member'
-  const initials = displayName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  // Memoize member display info to prevent recalculation
+  const { displayName, initials } = useMemo(() => {
+    const name = member.display_name || 'Member'
+    const init = name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+    return { displayName: name, initials: init }
+  }, [member.display_name])
 
   if (variant === 'list') {
     return (
@@ -224,3 +229,6 @@ export function MemberCard({
     </Card>
   )
 }
+
+// Memoize to prevent unnecessary re-renders when parent updates
+export const MemberCard = memo(MemberCardComponent)

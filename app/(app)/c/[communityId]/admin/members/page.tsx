@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -239,17 +239,19 @@ export default function AdminMembersPage() {
     }
   }
 
-  // Filter members
-  const filteredMembers = members.filter((m) => {
-    const matchesSearch =
-      !search ||
-      m.display_name?.toLowerCase().includes(search.toLowerCase())
-    const matchesRole = roleFilter === 'all' || m.role === roleFilter
-    const matchesStatus = statusFilter === 'all' || m.status === statusFilter
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  // Memoize filtered members to prevent recalculation on every render
+  const filteredMembers = useMemo(() => {
+    return members.filter((m) => {
+      const matchesSearch =
+        !search ||
+        m.display_name?.toLowerCase().includes(search.toLowerCase())
+      const matchesRole = roleFilter === 'all' || m.role === roleFilter
+      const matchesStatus = statusFilter === 'all' || m.status === statusFilter
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [members, search, roleFilter, statusFilter])
 
-  const getInitials = (name: string | null) => {
+  const getInitials = useCallback((name: string | null) => {
     if (!name) return '?'
     return name
       .split(' ')
@@ -257,7 +259,7 @@ export default function AdminMembersPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2)
-  }
+  }, [])
 
   return (
     <div className="p-6 lg:p-8">
