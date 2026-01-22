@@ -21,9 +21,17 @@ import {
   Loader2,
   Save,
   Sparkles,
+  Plus,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { skillCategories } from '@/components/members/skills-filter'
+import {
+  skillCategories,
+  isCustomSkill,
+  getSkillDisplayName,
+  createCustomSkillValue,
+  CUSTOM_SKILL_PREFIX
+} from '@/components/members/skills-filter'
 
 interface ProfileFormData {
   display_name: string
@@ -59,6 +67,8 @@ export default function EditProfilePage() {
     skills_description: '',
     available_for_help: false,
   })
+
+  const [customSkillInput, setCustomSkillInput] = useState('')
 
   const supabase = createClient()
 
@@ -202,6 +212,31 @@ export default function EditProfilePage() {
         : [...prev.skills, skill],
     }))
   }
+
+  const addCustomSkill = () => {
+    const trimmed = customSkillInput.trim()
+    if (!trimmed) return
+
+    const customValue = createCustomSkillValue(trimmed)
+    if (!formData.skills.includes(customValue)) {
+      setFormData((prev) => ({
+        ...prev,
+        skills: [...prev.skills, customValue],
+      }))
+    }
+    setCustomSkillInput('')
+  }
+
+  const handleCustomSkillKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addCustomSkill()
+    }
+  }
+
+  // Separate predefined and custom skills for display
+  const predefinedSkills = formData.skills.filter((s) => !isCustomSkill(s))
+  const customSkills = formData.skills.filter((s) => isCustomSkill(s))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -451,25 +486,61 @@ export default function EditProfilePage() {
             </ScrollArea>
           </div>
 
+          {/* Custom Skills Input */}
+          <div className="border-t border-border pt-4">
+            <Label className="mb-2 block">Add Custom Skills</Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              Can't find your skill? Add your own custom skills below.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={customSkillInput}
+                onChange={(e) => setCustomSkillInput(e.target.value)}
+                onKeyDown={handleCustomSkillKeyDown}
+                placeholder="e.g., Beekeeping, 3D Printing..."
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addCustomSkill}
+                disabled={!customSkillInput.trim()}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+            {customSkills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {customSkills.map((skill) => (
+                  <Badge
+                    key={skill}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-secondary/80"
+                    onClick={() => toggleSkill(skill)}
+                  >
+                    {getSkillDisplayName(skill)}
+                    <X className="h-3 w-3 ml-1" />
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
           {formData.skills.length > 0 && (
             <div className="border-t border-border pt-4">
-              <Label className="mb-2 block">Selected Skills</Label>
+              <Label className="mb-2 block">Selected Skills ({formData.skills.length})</Label>
               <div className="flex flex-wrap gap-2">
-                {formData.skills.map((skill) => {
-                  const skillInfo = skillCategories
-                    .flatMap((c) => c.skills)
-                    .find((s) => s.value === skill)
-                  return (
-                    <Badge
-                      key={skill}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-secondary/80"
-                      onClick={() => toggleSkill(skill)}
-                    >
-                      {skillInfo?.label || skill} ×
-                    </Badge>
-                  )
-                })}
+                {formData.skills.map((skill) => (
+                  <Badge
+                    key={skill}
+                    variant={isCustomSkill(skill) ? 'outline' : 'secondary'}
+                    className="cursor-pointer hover:bg-secondary/80"
+                    onClick={() => toggleSkill(skill)}
+                  >
+                    {getSkillDisplayName(skill)} ×
+                  </Badge>
+                ))}
               </div>
             </div>
           )}

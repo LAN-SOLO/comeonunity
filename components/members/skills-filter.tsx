@@ -19,7 +19,11 @@ import {
   Languages,
   Heart,
   Car,
-  MoreHorizontal,
+  Home,
+  GraduationCap,
+  Dumbbell,
+  Palette,
+  Briefcase,
 } from 'lucide-react'
 
 interface SkillsFilterProps {
@@ -43,6 +47,16 @@ const skillCategories: SkillCategory[] = [
       { value: 'carpentry', label: 'Carpentry' },
       { value: 'painting', label: 'Painting' },
       { value: 'gardening', label: 'Gardening' },
+      { value: 'furniture_assembly', label: 'Furniture Assembly' },
+      { value: 'appliance_repair', label: 'Appliance Repair' },
+      { value: 'tiling', label: 'Tiling' },
+      { value: 'flooring', label: 'Flooring' },
+      { value: 'wallpapering', label: 'Wallpapering' },
+      { value: 'locksmith', label: 'Locksmith' },
+      { value: 'welding', label: 'Welding' },
+      { value: 'roofing', label: 'Roofing' },
+      { value: 'masonry', label: 'Masonry' },
+      { value: 'window_repair', label: 'Window Repair' },
     ],
   },
   {
@@ -53,15 +67,36 @@ const skillCategories: SkillCategory[] = [
       { value: 'smartphone_help', label: 'Smartphone Help' },
       { value: 'printer_setup', label: 'Printer Setup' },
       { value: 'wifi_setup', label: 'WiFi Setup' },
+      { value: 'smart_home', label: 'Smart Home Setup' },
+      { value: 'tv_setup', label: 'TV / Streaming Setup' },
+      { value: 'data_recovery', label: 'Data Recovery' },
+      { value: 'virus_removal', label: 'Virus Removal' },
+      { value: 'web_design', label: 'Web Design' },
+      { value: 'programming', label: 'Programming' },
+      { value: 'social_media', label: 'Social Media Help' },
+      { value: 'online_shopping', label: 'Online Shopping Help' },
+      { value: 'video_calls', label: 'Video Calls Setup' },
+      { value: 'gaming_setup', label: 'Gaming Setup' },
     ],
   },
   {
     name: 'Languages',
     icon: Languages,
     skills: [
-      { value: 'german_help', label: 'German Help' },
-      { value: 'english_help', label: 'English Help' },
-      { value: 'translation', label: 'Translation' },
+      { value: 'german_help', label: 'German' },
+      { value: 'english_help', label: 'English' },
+      { value: 'french_help', label: 'French' },
+      { value: 'spanish_help', label: 'Spanish' },
+      { value: 'italian_help', label: 'Italian' },
+      { value: 'portuguese_help', label: 'Portuguese' },
+      { value: 'russian_help', label: 'Russian' },
+      { value: 'chinese_help', label: 'Chinese' },
+      { value: 'arabic_help', label: 'Arabic' },
+      { value: 'turkish_help', label: 'Turkish' },
+      { value: 'polish_help', label: 'Polish' },
+      { value: 'dutch_help', label: 'Dutch' },
+      { value: 'translation', label: 'Translation Services' },
+      { value: 'sign_language', label: 'Sign Language' },
     ],
   },
   {
@@ -69,9 +104,17 @@ const skillCategories: SkillCategory[] = [
     icon: Heart,
     skills: [
       { value: 'pet_sitting', label: 'Pet Sitting' },
+      { value: 'dog_walking', label: 'Dog Walking' },
       { value: 'plant_care', label: 'Plant Care' },
       { value: 'elderly_assistance', label: 'Elderly Assistance' },
       { value: 'childcare', label: 'Childcare' },
+      { value: 'babysitting', label: 'Babysitting' },
+      { value: 'first_aid', label: 'First Aid' },
+      { value: 'nursing', label: 'Nursing Care' },
+      { value: 'companionship', label: 'Companionship' },
+      { value: 'meal_preparation', label: 'Meal Preparation' },
+      { value: 'medication_reminder', label: 'Medication Reminders' },
+      { value: 'disability_support', label: 'Disability Support' },
     ],
   },
   {
@@ -81,17 +124,93 @@ const skillCategories: SkillCategory[] = [
       { value: 'driving', label: 'Driving' },
       { value: 'moving_help', label: 'Moving Help' },
       { value: 'errands', label: 'Errands' },
+      { value: 'airport_transfer', label: 'Airport Transfer' },
+      { value: 'grocery_shopping', label: 'Grocery Shopping' },
+      { value: 'pharmacy_pickup', label: 'Pharmacy Pickup' },
+      { value: 'parcel_delivery', label: 'Parcel Delivery' },
+      { value: 'bike_repair', label: 'Bike Repair' },
+      { value: 'car_maintenance', label: 'Car Maintenance' },
+      { value: 'heavy_lifting', label: 'Heavy Lifting' },
     ],
   },
   {
-    name: 'Other',
-    icon: MoreHorizontal,
+    name: 'Home & Household',
+    icon: Home,
     skills: [
       { value: 'cooking', label: 'Cooking' },
-      { value: 'tutoring', label: 'Tutoring' },
+      { value: 'baking', label: 'Baking' },
+      { value: 'cleaning', label: 'Cleaning' },
+      { value: 'laundry', label: 'Laundry' },
+      { value: 'ironing', label: 'Ironing' },
+      { value: 'organizing', label: 'Organizing / Decluttering' },
+      { value: 'sewing', label: 'Sewing / Alterations' },
+      { value: 'interior_design', label: 'Interior Design' },
+      { value: 'house_sitting', label: 'House Sitting' },
+      { value: 'key_holding', label: 'Key Holding' },
+    ],
+  },
+  {
+    name: 'Education & Tutoring',
+    icon: GraduationCap,
+    skills: [
+      { value: 'tutoring', label: 'General Tutoring' },
+      { value: 'math_tutoring', label: 'Math Tutoring' },
+      { value: 'science_tutoring', label: 'Science Tutoring' },
+      { value: 'language_tutoring', label: 'Language Tutoring' },
       { value: 'music_lessons', label: 'Music Lessons' },
-      { value: 'fitness', label: 'Fitness' },
+      { value: 'art_lessons', label: 'Art Lessons' },
+      { value: 'homework_help', label: 'Homework Help' },
+      { value: 'exam_preparation', label: 'Exam Preparation' },
+      { value: 'reading_help', label: 'Reading Help' },
+      { value: 'writing_help', label: 'Writing Help' },
+    ],
+  },
+  {
+    name: 'Health & Fitness',
+    icon: Dumbbell,
+    skills: [
+      { value: 'fitness', label: 'Fitness Training' },
+      { value: 'yoga', label: 'Yoga' },
+      { value: 'meditation', label: 'Meditation' },
+      { value: 'nutrition', label: 'Nutrition Advice' },
+      { value: 'personal_training', label: 'Personal Training' },
+      { value: 'running_buddy', label: 'Running Buddy' },
+      { value: 'swimming', label: 'Swimming Lessons' },
+      { value: 'massage', label: 'Massage' },
+      { value: 'physiotherapy', label: 'Physiotherapy' },
+      { value: 'mental_health', label: 'Mental Health Support' },
+    ],
+  },
+  {
+    name: 'Creative & Arts',
+    icon: Palette,
+    skills: [
       { value: 'photography', label: 'Photography' },
+      { value: 'videography', label: 'Videography' },
+      { value: 'graphic_design', label: 'Graphic Design' },
+      { value: 'drawing', label: 'Drawing' },
+      { value: 'crafts', label: 'Crafts' },
+      { value: 'knitting', label: 'Knitting / Crocheting' },
+      { value: 'pottery', label: 'Pottery' },
+      { value: 'calligraphy', label: 'Calligraphy' },
+      { value: 'music_performance', label: 'Music Performance' },
+      { value: 'event_planning', label: 'Event Planning' },
+    ],
+  },
+  {
+    name: 'Professional Services',
+    icon: Briefcase,
+    skills: [
+      { value: 'accounting', label: 'Accounting' },
+      { value: 'tax_help', label: 'Tax Help' },
+      { value: 'legal_advice', label: 'Legal Advice' },
+      { value: 'resume_writing', label: 'Resume Writing' },
+      { value: 'job_coaching', label: 'Job Coaching' },
+      { value: 'notary', label: 'Notary Services' },
+      { value: 'form_filling', label: 'Form Filling Help' },
+      { value: 'bureaucracy_help', label: 'Bureaucracy Help' },
+      { value: 'insurance_advice', label: 'Insurance Advice' },
+      { value: 'real_estate', label: 'Real Estate Advice' },
     ],
   },
 ]
@@ -205,4 +324,48 @@ export function SkillsFilter({ selectedSkills, onSkillsChange }: SkillsFilterPro
   )
 }
 
-export { skillCategories }
+// Custom skill prefix - skills starting with this are user-defined
+const CUSTOM_SKILL_PREFIX = 'custom:'
+
+// Helper function to check if a skill is a predefined one
+function isPreDefinedSkill(value: string): boolean {
+  for (const category of skillCategories) {
+    if (category.skills.find((s) => s.value === value)) {
+      return true
+    }
+  }
+  return false
+}
+
+// Helper function to check if a skill is custom
+function isCustomSkill(value: string): boolean {
+  return value.startsWith(CUSTOM_SKILL_PREFIX)
+}
+
+// Helper function to get display name of a skill (handles both predefined and custom)
+function getSkillDisplayName(value: string): string {
+  // Check if it's a custom skill
+  if (isCustomSkill(value)) {
+    return value.substring(CUSTOM_SKILL_PREFIX.length)
+  }
+  // Check predefined skills
+  for (const category of skillCategories) {
+    const skill = category.skills.find((s) => s.value === value)
+    if (skill) return skill.label
+  }
+  return value
+}
+
+// Helper function to create a custom skill value from user input
+function createCustomSkillValue(name: string): string {
+  return `${CUSTOM_SKILL_PREFIX}${name}`
+}
+
+export {
+  skillCategories,
+  CUSTOM_SKILL_PREFIX,
+  isPreDefinedSkill,
+  isCustomSkill,
+  getSkillDisplayName,
+  createCustomSkillValue
+}
