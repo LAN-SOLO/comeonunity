@@ -211,15 +211,15 @@ export default async function HomePage() {
               Choose the plan that fits your community. All plans include a 14-day free trial.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 pt-4">
             {SUBSCRIPTION_TIERS.map((tier) => (
               <Card
                 key={tier.id}
-                className={`relative ${tier.popular ? 'border-primary shadow-lg scale-105' : ''}`}
+                className={`relative ${tier.popular ? 'border-primary shadow-lg' : ''}`}
               >
                 {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-primary text-primary-foreground shadow-sm">Most Popular</Badge>
                   </div>
                 )}
                 <CardHeader className="text-center pb-4">
