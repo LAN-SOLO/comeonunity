@@ -170,30 +170,6 @@ export default async function HomePage() {
         </p>
       </section>
 
-      {/* Stats Section */}
-      <section className="border-y border-border bg-muted/50">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-primary">500+</div>
-              <div className="text-sm text-muted-foreground">Communities</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">10k+</div>
-              <div className="text-sm text-muted-foreground">Active Members</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">50k+</div>
-              <div className="text-sm text-muted-foreground">Items Shared</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">99.9%</div>
-              <div className="text-sm text-muted-foreground">Uptime</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
       <section id="features" className="max-w-6xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
