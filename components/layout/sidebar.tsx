@@ -20,6 +20,7 @@ import { SearchCommand } from '@/components/search/search-command'
 import { SearchButton } from '@/components/search/search-button'
 import { ThemeToggleInline } from '@/components/theme'
 import { LogoText } from '@/components/brand/logo-text'
+import { DevModeIndicator, PlanStatusBadge } from '@/components/dev'
 import {
   Home,
   Users,
@@ -69,13 +70,22 @@ export function Sidebar() {
         <Link href="/" className="flex items-center">
           <LogoText size="sm" />
         </Link>
-        {communityIdFromPath && (
-          <NotificationsDropdown communityId={communityIdFromPath} />
-        )}
+        <div className="flex items-center gap-2">
+          <DevModeIndicator />
+          {communityIdFromPath && (
+            <NotificationsDropdown communityId={communityIdFromPath} />
+          )}
+        </div>
       </div>
 
       {/* Community Selector */}
       <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
+        {/* Plan Status Badge */}
+        {currentCommunity?.plan && (
+          <div className="mb-3 flex justify-center">
+            <PlanStatusBadge plan={currentCommunity.plan} />
+          </div>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-between">

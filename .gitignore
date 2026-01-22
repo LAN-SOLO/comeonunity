@@ -42,3 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# developer secrets (NEVER commit)
+/dev-docs/
+/.dev-secrets/
+*.secret.md
+*.secret.json
+DEVELOPER_*.md
