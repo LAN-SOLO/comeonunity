@@ -1082,4 +1082,59 @@ Any observations, learnings, decisions made.
 
 ---
 
+---
+
+## v3 Roadmap (Post-MVP)
+
+> See `docs/V3_UPGRADE_PLAN.md` for full details
+
+### v3 New Features
+
+#### Office Community Type
+A new community type for coworking spaces, offices, and shared workplaces:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Floor Plans | Visual maps of office layouts | 🔄 In Progress |
+| Desk Booking | Reserve desks by day/time | ✅ Basic Done |
+| Meeting Rooms | Book conference rooms | 📋 Planned |
+| Parking | Reserve parking spots | 📋 Planned |
+| Visitors | Register and track guests | 📋 Planned |
+| Team Calendar | "Where is everyone?" view | ✅ Done |
+
+#### Enhanced Marketplace
+Full buying/selling platform with secure payments:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Escrow Payments | Stripe holds funds until delivery confirmed | 📋 Planned |
+| Buyer/Seller Chat | In-app messaging for listings | 📋 Planned |
+| Reviews | Rate buyers and sellers | 📋 Planned |
+| Disputes | Resolution system for problems | 📋 Planned |
+| Favorites | Save listings for later | 📋 Planned |
+
+#### New Pricing Tiers
+
+| Tier | Price | Target |
+|------|-------|--------|
+| Office Starter | €15/year | Small offices (25 members) |
+| Office Pro | €35/year | Medium offices (75 members) |
+| Office Enterprise | €79/year | Large offices (200 members) |
+
+### v3 Database Migrations
+- `014_office_module.sql` - 8 new tables for office features
+- `015_marketplace_enhancements.sql` - 5 new tables for marketplace
+
+### v3 Implementation Status
+```
+Phase 1: Database & Types      ████████████████████ 100%
+Phase 2: Office Core UI        ████████░░░░░░░░░░░░  40%
+Phase 3: Office Advanced       ██░░░░░░░░░░░░░░░░░░  10%
+Phase 4: Marketplace UI        ░░░░░░░░░░░░░░░░░░░░   0%
+Phase 5: Stripe Integration    ░░░░░░░░░░░░░░░░░░░░   0%
+```
+
+---
+
 *ComeOnUnity Development Plan v1.0 | January 2026*
+*v3 Roadmap added January 2026*

@@ -1,10 +1,36 @@
 # ComeOnUnity v3 Upgrade Plan
 
+> **Last Updated:** January 2026
+> **Status:** In Progress - Phase 1 Complete
+
 ## Executive Summary
 
 This document outlines the upgrade path from v2 to v3, introducing two major new modules:
 1. **Office Community Type** - Desk booking, floor plans, meeting rooms, parking, visitors
 2. **Full Marketplace with Escrow** - Complete buying/selling with secure payments
+
+---
+
+## Current Progress
+
+### Completed
+- [x] **V3 Upgrade Plan** - This document
+- [x] **Database Migration 014** - Office module tables with RLS policies
+- [x] **Database Migration 015** - Marketplace enhancements with escrow
+- [x] **TypeScript Types** - `lib/types/office.ts` and `lib/types/marketplace.ts`
+- [x] **Validation Updates** - Added `office` type and office plans
+- [x] **Office Dashboard** - `app/(app)/c/[communityId]/office/page.tsx`
+- [x] **Desk Booking Page** - `app/(app)/c/[communityId]/office/desks/page.tsx`
+- [x] **Team Calendar Page** - `app/(app)/c/[communityId]/office/team/page.tsx`
+
+### In Progress
+- [ ] Run SQL migrations in Supabase
+- [ ] Create remaining Office pages (floor plans, meeting rooms, parking, visitors)
+
+### Pending
+- [ ] Stripe Office tier products
+- [ ] Marketplace UI components
+- [ ] Escrow payment integration
 
 ---
 
@@ -535,37 +561,42 @@ Create in Stripe Dashboard:
 
 ## Implementation Timeline
 
-### Week 1-2: Database & Foundation
-- [ ] Create migration 014_office_module.sql
-- [ ] Create migration 015_marketplace_enhancements.sql
-- [ ] Add RLS policies for new tables
-- [ ] Update TypeScript types
-- [ ] Add office tier to subscription system
+### Week 1-2: Database & Foundation ✅ COMPLETE
+- [x] Create migration 014_office_module.sql
+- [x] Create migration 015_marketplace_enhancements.sql
+- [x] Add RLS policies for new tables
+- [x] Update TypeScript types
+- [ ] Add office tier to subscription system (Stripe setup pending)
 
-### Week 3-4: Office Core Features
+### Week 3-4: Office Core Features 🔄 IN PROGRESS
 - [ ] Floor plan viewer component
-- [ ] Desk management CRUD
-- [ ] Desk booking system
-- [ ] Basic meeting room booking
+- [ ] Floor plan list page
+- [ ] Floor plan detail page
+- [x] Desk booking system (basic page done)
+- [ ] Meeting room list page
+- [ ] Meeting room booking page
 
 ### Week 5-6: Office Advanced Features
 - [ ] Floor plan editor (admin)
-- [ ] Parking management
+- [ ] Parking spot management
+- [ ] Parking booking page
 - [ ] Visitor registration
-- [ ] Team location calendar
-- [ ] Office dashboard
+- [x] Team location calendar ✅
+- [x] Office dashboard ✅
 
 ### Week 7-8: Marketplace Enhancement
+- [ ] Marketplace listing page
+- [ ] Create/edit listing forms
 - [ ] Conversation/messaging system
-- [ ] Escrow payment flow
+- [ ] Escrow payment flow (Stripe)
 - [ ] Review system
-- [ ] Dispute handling
-- [ ] Favorites
+- [ ] Dispute handling UI
+- [ ] Favorites feature
 
 ### Week 9-10: Polish & Testing
 - [ ] UI/UX refinement
 - [ ] Mobile responsiveness
-- [ ] Error handling
+- [ ] Error handling improvements
 - [ ] Performance optimization
 - [ ] User acceptance testing
 
@@ -604,3 +635,150 @@ Before deploying v3:
 - Marketplace transaction volume
 - Escrow dispute rate (target: <2%)
 - User satisfaction scores
+
+---
+
+## Immediate Next Steps
+
+### Priority 1: Database Setup (Required First)
+1. **Run SQL Migrations in Supabase**
+   - Go to Supabase Dashboard → SQL Editor
+   - Execute `014_office_module.sql` (creates 8 new tables)
+   - Execute `015_marketplace_enhancements.sql` (enhances marketplace)
+   - Verify tables created: `floor_plans`, `desks`, `desk_bookings`, `meeting_rooms`, `room_bookings`, `parking_spots`, `parking_bookings`, `visitors`, `work_locations`
+   - Verify marketplace tables: `marketplace_conversations`, `marketplace_messages`, `marketplace_reviews`, `marketplace_disputes`, `marketplace_favorites`
+
+2. **Add Office Tiers to subscription_tiers Table**
+   ```sql
+   -- Run after migrations
+   INSERT INTO subscription_tiers (name, slug, annual_price, monthly_price, max_members, max_items, max_resources, storage_mb, features)
+   VALUES
+     ('Office Starter', 'office_starter', 15.00, 1.47, 25, 0, 10, 2048, '{"desk_booking": true, "floor_plans": 1, "meeting_rooms": 2}'),
+     ('Office Pro', 'office_pro', 35.00, 3.42, 75, 0, 25, 5120, '{"desk_booking": true, "floor_plans": 3, "meeting_rooms": 5, "analytics": true}'),
+     ('Office Enterprise', 'office_enterprise', 79.00, 7.72, 200, 0, 100, 20480, '{"desk_booking": true, "floor_plans": -1, "meeting_rooms": -1, "api_access": true}');
+   ```
+
+### Priority 2: Complete Office UI Pages
+1. **Floor Plans Module**
+   - `app/(app)/c/[communityId]/office/floor-plans/page.tsx` - List all floor plans
+   - `app/(app)/c/[communityId]/office/floor-plans/[floorPlanId]/page.tsx` - View floor plan with desks
+   - `app/(app)/c/[communityId]/office/floor-plans/new/page.tsx` - Create floor plan (admin)
+
+2. **Meeting Rooms Module**
+   - `app/(app)/c/[communityId]/office/meeting-rooms/page.tsx` - List rooms with availability
+   - `app/(app)/c/[communityId]/office/meeting-rooms/[roomId]/page.tsx` - Room details & booking
+
+3. **Parking Module**
+   - `app/(app)/c/[communityId]/office/parking/page.tsx` - Parking overview & booking
+
+4. **Visitors Module**
+   - `app/(app)/c/[communityId]/office/visitors/page.tsx` - Visitor log
+   - `app/(app)/c/[communityId]/office/visitors/register/page.tsx` - Register new visitor
+
+### Priority 3: Office Components
+Create reusable components in `components/office/`:
+- `floor-plan-viewer.tsx` - Interactive SVG/image viewer
+- `desk-card.tsx` - Desk information display
+- `room-availability-grid.tsx` - Time slot availability
+- `visitor-form.tsx` - Visitor registration form
+- `parking-spot-card.tsx` - Parking spot display
+
+### Priority 4: Stripe Integration (Office Tiers)
+1. Create products in Stripe Dashboard:
+   - `prod_office_starter` (€15/year, €1.47/month)
+   - `prod_office_pro` (€35/year, €3.42/month)
+   - `prod_office_enterprise` (€79/year, €7.72/month)
+2. Update `subscription_tiers` with Stripe price IDs
+3. Update checkout flow to support office tiers
+
+### Priority 5: Marketplace UI
+1. **Listing Pages**
+   - Browse listings with filters
+   - Listing detail view
+   - Create/edit listing forms
+
+2. **Transaction Flow**
+   - Checkout with escrow payment
+   - Transaction status tracking
+   - Delivery confirmation
+
+3. **Communication**
+   - Buyer/seller messaging
+   - Review submission after transaction
+
+---
+
+## File Reference
+
+### Created Files
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/014_office_module.sql` | Office tables & RLS |
+| `supabase/migrations/015_marketplace_enhancements.sql` | Enhanced marketplace |
+| `lib/types/office.ts` | Office TypeScript types |
+| `lib/types/marketplace.ts` | Marketplace TypeScript types |
+| `app/(app)/c/[communityId]/office/page.tsx` | Office dashboard |
+| `app/(app)/c/[communityId]/office/desks/page.tsx` | Desk booking |
+| `app/(app)/c/[communityId]/office/team/page.tsx` | Team calendar |
+
+### Modified Files
+| File | Change |
+|------|--------|
+| `lib/validations/community.ts` | Added `office` type and office plans |
+
+### Directories Created
+```
+app/(app)/c/[communityId]/office/
+├── page.tsx              ✅ Created
+├── desks/
+│   └── page.tsx          ✅ Created
+├── floor-plans/
+│   └── [floorPlanId]/    📁 Empty (pending)
+├── meeting-rooms/
+│   └── [roomId]/         📁 Empty (pending)
+├── parking/              📁 Empty (pending)
+├── visitors/             📁 Empty (pending)
+└── team/
+    └── page.tsx          ✅ Created
+```
+
+---
+
+## Testing Checklist
+
+Before considering v3 complete:
+
+### Office Module
+- [ ] Can create office community type
+- [ ] Can add floor plans with image upload
+- [ ] Can add desks to floor plan
+- [ ] Can book a desk for a date
+- [ ] Can view desk bookings
+- [ ] Can cancel desk booking
+- [ ] Can add meeting rooms
+- [ ] Can book meeting room with time slots
+- [ ] Can add parking spots
+- [ ] Can book parking spot
+- [ ] Can register visitors
+- [ ] Can check-in/check-out visitors
+- [ ] Can view/set team work locations
+
+### Marketplace Module
+- [ ] Can create marketplace listing
+- [ ] Can browse/search listings
+- [ ] Can favorite listings
+- [ ] Can message seller about listing
+- [ ] Can purchase with escrow payment
+- [ ] Seller can mark as shipped
+- [ ] Buyer can confirm receipt
+- [ ] Escrow auto-releases after 7 days
+- [ ] Can leave review after transaction
+- [ ] Can open dispute
+- [ ] Admin can resolve dispute
+
+### Integration Tests
+- [ ] RLS policies properly restrict access
+- [ ] Office pages only show for office communities
+- [ ] Desk booking prevents double-booking
+- [ ] Room booking checks for conflicts
+- [ ] Escrow payment holds funds correctly
