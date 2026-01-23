@@ -74,7 +74,10 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         .eq('status', 'active')
 
       if (membershipError) {
-        console.error('Error fetching memberships:', membershipError)
+        // Only log if it's not a network error (those are expected when offline)
+        if (membershipError.code !== 'NETWORK_ERROR') {
+          console.error('Error fetching memberships:', membershipError.message || membershipError.code || 'Unknown error')
+        }
         return
       }
 
@@ -94,7 +97,9 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         .eq('status', 'active')
 
       if (communityError) {
-        console.error('Error fetching communities:', communityError)
+        if (communityError.code !== 'NETWORK_ERROR') {
+          console.error('Error fetching communities:', communityError.message || communityError.code || 'Unknown error')
+        }
         return
       }
 

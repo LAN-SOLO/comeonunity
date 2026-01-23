@@ -32,7 +32,24 @@ export default function ProfileSettingsPage() {
       }
       setUser(user)
       setFullName(user.user_metadata?.full_name || '')
-      setAvatarUrl(user.user_metadata?.avatar_url || '')
+
+      // Check user metadata first, then fallback to community member avatar
+      let avatar = user.user_metadata?.avatar_url || ''
+      if (!avatar) {
+        // Try to get avatar from any community membership
+        const { data: member } = await supabase
+          .from('community_members')
+          .select('avatar_url')
+          .eq('user_id', user.id)
+          .not('avatar_url', 'is', null)
+          .limit(1)
+          .single()
+
+        if (member?.avatar_url) {
+          avatar = member.avatar_url
+        }
+      }
+      setAvatarUrl(avatar)
       setLoading(false)
     }
     loadUser()

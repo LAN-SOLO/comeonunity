@@ -39,6 +39,22 @@ export default async function SettingsPage() {
     .eq('id', user.id)
     .single()
 
+  // Get avatar URL - check user metadata first, then community member
+  let avatarUrl = user.user_metadata?.avatar_url || ''
+  if (!avatarUrl) {
+    const { data: member } = await supabase
+      .from('community_members')
+      .select('avatar_url')
+      .eq('user_id', user.id)
+      .not('avatar_url', 'is', null)
+      .limit(1)
+      .single()
+
+    if (member?.avatar_url) {
+      avatarUrl = member.avatar_url
+    }
+  }
+
   return (
     <div className="p-6 lg:p-8 max-w-2xl mx-auto">
       {/* Back to Home */}
@@ -64,9 +80,9 @@ export default async function SettingsPage() {
       <Card className="p-6 mb-6">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={user.user_metadata?.avatar_url} />
+            <AvatarImage src={avatarUrl} />
             <AvatarFallback className="text-xl">
-              {user.email?.[0].toUpperCase() || 'U'}
+              {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0].toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
