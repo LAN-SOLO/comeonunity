@@ -6,6 +6,7 @@ export const communityTypeEnum = z.enum([
   'neighborhood',
   'cohousing',
   'interest',
+  'office', // v3: Office/Coworking community type
 ])
 
 export const communityPlanEnum = z.enum([
@@ -13,6 +14,10 @@ export const communityPlanEnum = z.enum([
   'starter',
   'community',
   'pro',
+  // v3: Office-specific plans
+  'office_starter',
+  'office_pro',
+  'office_enterprise',
 ])
 
 export const createCommunitySchema = z.object({
