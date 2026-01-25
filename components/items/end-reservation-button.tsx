@@ -45,9 +45,9 @@ export function EndReservationButton({
 
       toast.success('Item is now available')
       router.refresh()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to end reservation:', err)
-      toast.error(err.message || 'Failed to end reservation')
+      toast.error(err instanceof Error ? err.message : 'Failed to end reservation')
     } finally {
       setIsEnding(false)
     }

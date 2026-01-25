@@ -123,7 +123,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     ]
 
     // Filter to only allowed fields
-    const updates: Record<string, any> = {}
+    const updates: Record<string, unknown> = {}
     for (const field of allowedFields) {
       if (field in body) {
         updates[field] = body[field]

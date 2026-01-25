@@ -225,6 +225,10 @@ export async function notifyBorrowRequest(
 
     if (!item || !item.owner) return
 
+    // Transform Supabase array relation to single object
+    const ownerData = Array.isArray(item.owner) ? item.owner[0] : item.owner
+    if (!ownerData) return
+
     // Get community name
     const { data: community } = await adminClient
       .from('communities')
@@ -241,7 +245,7 @@ export async function notifyBorrowRequest(
       `${process.env.NEXT_PUBLIC_APP_URL || 'https://comeonunity.app'}/c/${item.community_id}/items/${itemId}`
     )
 
-    await sendNotificationEmail((item.owner as any).user_id, template)
+    await sendNotificationEmail((ownerData as { user_id: string }).user_id, template)
   } catch (error) {
     console.error('Failed to send borrow request notification:', error)
   }

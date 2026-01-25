@@ -35,13 +35,13 @@ export function CookieConsent() {
     // Check if consent was already given
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (!stored) {
-      setShowBanner(true)
+      queueMicrotask(() => setShowBanner(true))
     } else {
       try {
         const parsed = JSON.parse(stored) as CookiePreferences
-        setPreferences(parsed)
+        queueMicrotask(() => setPreferences(parsed))
       } catch {
-        setShowBanner(true)
+        queueMicrotask(() => setShowBanner(true))
       }
     }
   }, [])
@@ -214,9 +214,9 @@ export function useCookieConsent() {
     const stored = localStorage.getItem(COOKIE_CONSENT_KEY)
     if (stored) {
       try {
-        setConsent(JSON.parse(stored))
+        queueMicrotask(() => setConsent(JSON.parse(stored)))
       } catch {
-        setConsent(null)
+        queueMicrotask(() => setConsent(null))
       }
     }
   }, [])

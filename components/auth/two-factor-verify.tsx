@@ -43,8 +43,8 @@ export function TwoFactorVerify() {
       toast.success('Verification successful')
       router.push(redirectTo)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Verification failed')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed')
     } finally {
       setLoading(false)
     }
@@ -72,8 +72,8 @@ export function TwoFactorVerify() {
       toast.success('Verification successful')
       router.push(redirectTo)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Verification failed')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed')
     } finally {
       setLoading(false)
     }

@@ -29,7 +29,7 @@ export function ThemeToggle() {
 
   // Prevent hydration mismatch
   useEffect(() => {
-    setMounted(true)
+    queueMicrotask(() => setMounted(true))
   }, [])
 
   if (!mounted) {
@@ -80,7 +80,7 @@ export function ThemeToggleInline() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    queueMicrotask(() => setMounted(true))
   }, [])
 
   if (!mounted) {

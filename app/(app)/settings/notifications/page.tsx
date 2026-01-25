@@ -160,7 +160,7 @@ export default function NotificationSettingsPage() {
 
       {/* Notification Types Info */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">What you'll receive</h2>
+        <h2 className="text-lg font-semibold mb-4">What you&apos;ll receive</h2>
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <Package className="h-5 w-5 text-muted-foreground mt-0.5" />

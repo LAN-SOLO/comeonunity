@@ -71,8 +71,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       not_going: rsvps?.filter((r) => r.status === 'not_going').length || 0,
     }
 
-    // Get user's RSVP
-    const userRsvp = rsvps?.find((r) => (r.member as any)?.id === member.id)
+    // Get user's RSVP - transform array relation to single object
+    const userRsvp = rsvps?.find((r) => {
+      const memberData = Array.isArray(r.member) ? r.member[0] : r.member
+      return (memberData as { id: string } | null)?.id === member.id
+    })
 
     return NextResponse.json({
       rsvps: rsvps || [],

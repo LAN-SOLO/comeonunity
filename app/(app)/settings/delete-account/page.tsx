@@ -97,7 +97,7 @@ export default function DeleteAccountPage() {
       })
 
       router.push('/login')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete account error:', error)
       toast.error('Failed to delete account')
     } finally {
@@ -153,7 +153,7 @@ export default function DeleteAccountPage() {
             </p>
             <ul className="list-disc list-inside mt-2 text-muted-foreground space-y-1">
               <li>Your profile and account information</li>
-              <li>All items you've listed</li>
+              <li>All items you&apos;ve listed</li>
               <li>Your community memberships</li>
               <li>Your borrow history and bookings</li>
               <li>All notifications and messages</li>

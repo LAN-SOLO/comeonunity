@@ -25,7 +25,6 @@ import {
   X,
   Loader2,
   Save,
-  Eye,
   Send,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -145,9 +144,9 @@ export default function NewNewsPage() {
 
       setImageUrl(publicUrl)
       toast.success('Image uploaded')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err)
-      toast.error(err.message || 'Failed to upload image')
+      toast.error(err instanceof Error ? err.message : 'Failed to upload image')
     } finally {
       setIsUploading(false)
     }
@@ -192,9 +191,9 @@ export default function NewNewsPage() {
 
       toast.success(publish ? 'Article published!' : 'Draft saved')
       router.push(`/c/${communitySlug}/news/${article.id}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed:', err)
-      toast.error(err.message || 'Failed to save article')
+      toast.error(err instanceof Error ? err.message : 'Failed to save article')
     } finally {
       setIsSaving(false)
     }

@@ -8,7 +8,6 @@ import {
   Users,
   Building2,
   Shield,
-  TrendingUp,
   AlertTriangle,
   Activity,
   Settings,

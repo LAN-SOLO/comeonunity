@@ -196,9 +196,10 @@ export default function EditProfilePage() {
         .eq('id', memberId)
 
       toast.success('Avatar updated')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Upload failed:', err)
-      toast.error(err.message || 'Failed to upload avatar')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload avatar'
+      toast.error(errorMessage)
     } finally {
       setIsUploading(false)
     }
@@ -262,9 +263,10 @@ export default function EditProfilePage() {
 
       toast.success('Profile updated')
       router.push(`/c/${communitySlug}/members/${memberId}`)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Save failed:', err)
-      toast.error(err.message || 'Failed to save profile')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save profile'
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -445,7 +447,7 @@ export default function EditProfilePage() {
                 Available to Help
               </p>
               <p className="text-sm text-muted-foreground">
-                Let neighbors know you're open to helping out
+                Let neighbors know you&apos;re open to helping out
               </p>
             </div>
             <Switch
@@ -490,7 +492,7 @@ export default function EditProfilePage() {
           <div className="border-t border-border pt-4">
             <Label className="mb-2 block">Add Custom Skills</Label>
             <p className="text-sm text-muted-foreground mb-3">
-              Can't find your skill? Add your own custom skills below.
+              Can&apos;t find your skill? Add your own custom skills below.
             </p>
             <div className="flex gap-2">
               <Input

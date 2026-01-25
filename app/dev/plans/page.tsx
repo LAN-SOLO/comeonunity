@@ -39,7 +39,7 @@ export default async function DevPlansPage() {
       .select('community:communities(id, name, slug, plan)')
       .eq('user_id', user?.id)
       .eq('status', 'active');
-    communities = data?.map((m) => m.community).filter(Boolean) as typeof communities || [];
+    communities = data?.map((m) => Array.isArray(m.community) ? m.community[0] : m.community).filter(Boolean) as typeof communities || [];
   }
 
   const tiers = manager.getAllTiers();

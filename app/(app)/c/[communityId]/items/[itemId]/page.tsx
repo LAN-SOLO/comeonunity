@@ -118,7 +118,18 @@ export default async function ItemDetailPage({ params }: Props) {
     notFound()
   }
 
-  const owner = item.owner as any
+  // Transform Supabase array relation to single object
+  const ownerData = Array.isArray(item.owner) ? item.owner[0] : item.owner
+  const owner = ownerData as {
+    id: string
+    user_id: string
+    display_name: string | null
+    avatar_url: string | null
+    unit_number: string | null
+    phone: string | null
+    show_phone: boolean | null
+    show_email: boolean | null
+  } | null
   const isOwner = owner?.id === currentMember.id
   const ownerName = owner?.display_name || 'Member'
   const ownerInitials = ownerName
@@ -268,12 +279,12 @@ export default async function ItemDetailPage({ params }: Props) {
           </div>
 
           {/* Borrow Request Form */}
-          {!isOwner && item.status === 'available' && !activeBorrowRequest && (
+          {!isOwner && item.status === 'available' && !activeBorrowRequest && owner && (
             <div className="mb-6">
               <BorrowRequestForm
                 itemId={itemId}
                 itemName={item.name}
-                ownerUserId={owner?.user_id}
+                ownerUserId={owner.user_id}
                 communityId={community.id}
                 communitySlug={community.slug}
                 currentMemberId={currentMember.id}
@@ -295,7 +306,15 @@ export default async function ItemDetailPage({ params }: Props) {
 
           {/* Active Booking Info */}
           {activeBorrowRequest && (() => {
-            const borrower = activeBorrowRequest.borrower as any
+            // Transform Supabase array relation to single object
+            const borrowerData = Array.isArray(activeBorrowRequest.borrower)
+              ? activeBorrowRequest.borrower[0]
+              : activeBorrowRequest.borrower
+            const borrower = borrowerData as {
+              id: string
+              display_name: string | null
+              avatar_url: string | null
+            } | null
             const isOwnerReservation = isOwner && borrower?.id === currentMember.id
             const isScheduledReservation = isOwnerReservation && activeBorrowRequest.status === 'approved'
             const isActiveReservation = isOwnerReservation && activeBorrowRequest.status === 'active'

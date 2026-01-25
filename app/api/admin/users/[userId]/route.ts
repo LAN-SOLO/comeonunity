@@ -65,7 +65,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const userEmail = authData?.user?.email || 'Unknown'
 
     const previousState = { ...targetProfile }
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | null> = {}
 
     if (action === 'suspend') {
       updates.status = 'suspended'

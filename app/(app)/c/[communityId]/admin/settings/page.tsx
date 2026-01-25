@@ -67,7 +67,7 @@ interface Community {
   announcement_text: string | null
   announcement_link: string | null
   announcement_active: boolean
-  settings: Record<string, any>
+  settings: Record<string, unknown>
 }
 
 const communityTypes = [
@@ -239,9 +239,10 @@ export default function CommunitySettingsPage() {
       setShowActivityFeed(display.show_activity_feed ?? true)
       setShowQuickStats(display.show_quick_stats ?? true)
 
-    } catch (err: any) {
-      console.error('Failed to fetch community:', err?.message || err?.code || JSON.stringify(err))
-      toast.error(err?.message || 'Failed to load community settings')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load community settings'
+      console.error('Failed to fetch community:', errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -288,9 +289,9 @@ export default function CommunitySettingsPage() {
         .getPublicUrl(fileName)
 
       return publicUrl
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err)
-      toast.error(err.message || 'Failed to upload image')
+      toast.error(err instanceof Error ? err.message : 'Failed to upload image')
       return null
     } finally {
       setUploading(false)

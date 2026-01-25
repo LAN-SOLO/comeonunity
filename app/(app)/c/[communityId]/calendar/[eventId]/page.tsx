@@ -198,7 +198,16 @@ export default async function EventDetailPage({ params }: Props) {
   // Get RSVP data (only for authenticated members - RLS requires auth)
   let rsvpCount = 0
   let userRsvp = null
-  let attendees: any[] = []
+  interface Attendee {
+    status: string
+    guests: number
+    member: {
+      id: string
+      display_name: string | null
+      avatar_url: string | null
+    } | null
+  }
+  let attendees: Attendee[] = []
 
   if (member) {
     // Get RSVP count
@@ -234,14 +243,27 @@ export default async function EventDetailPage({ params }: Props) {
       .eq('status', 'going')
       .limit(20)
 
-    attendees = attendeesData || []
+    // Transform the data to handle Supabase's array format for relations
+    attendees = (attendeesData || []).map(a => ({
+      status: a.status,
+      guests: a.guests,
+      member: Array.isArray(a.member) ? a.member[0] || null : a.member
+    }))
   }
 
-  const organizer = event.organizer as any
+  interface Organizer {
+    id: string
+    display_name: string | null
+    avatar_url: string | null
+    role: string
+  }
+  // Handle Supabase's array format for relations
+  const organizerData = event.organizer
+  const organizer: Organizer | null = Array.isArray(organizerData) ? organizerData[0] || null : organizerData as Organizer | null
   const organizerName = organizer?.display_name || 'Unknown'
   const organizerInitials = organizerName
     .split(' ')
-    .map((n: string) => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -497,11 +519,11 @@ export default async function EventDetailPage({ params }: Props) {
               </h2>
               <div className="space-y-3">
                 {attendees.map((rsvp) => {
-                  const attendee = rsvp.member as any
+                  const attendee = rsvp.member
                   const name = attendee?.display_name || 'Unknown'
                   const initials = name
                     .split(' ')
-                    .map((n: string) => n[0])
+                    .map((n) => n[0])
                     .join('')
                     .toUpperCase()
                     .slice(0, 2)

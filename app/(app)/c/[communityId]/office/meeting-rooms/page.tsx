@@ -322,11 +322,9 @@ export default function MeetingRoomsPage() {
                       {room.amenities.map((amenity) => {
                         const Icon = amenityIcons[amenity] || Coffee
                         return (
-                          <Icon
-                            key={amenity}
-                            className="h-4 w-4 text-muted-foreground"
-                            title={amenity.replace('_', ' ')}
-                          />
+                          <span key={amenity} title={amenity.replace('_', ' ')}>
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                          </span>
                         )
                       })}
                     </div>

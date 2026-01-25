@@ -114,10 +114,25 @@ export default function FavoritesPage() {
 
       if (error) throw error
 
-      // Filter out deleted listings
-      const validFavorites = (data || []).filter(
-        (f: any) => f.listing && f.listing.status !== 'deleted'
-      ) as FavoriteWithListing[]
+      // Transform nested arrays to single objects and filter out deleted listings
+      interface RawFavorite {
+        id: string
+        listing_id: string
+        created_at: string
+        listing: ListingWithSeller | ListingWithSeller[] | null
+      }
+
+      const transformedData = (data || []).map((f: RawFavorite) => {
+        const listing = Array.isArray(f.listing) ? f.listing[0] : f.listing
+        if (listing?.seller) {
+          listing.seller = Array.isArray(listing.seller) ? listing.seller[0] : listing.seller
+        }
+        return { ...f, listing }
+      })
+
+      const validFavorites = transformedData.filter(
+        (f): f is FavoriteWithListing => f.listing !== null && f.listing !== undefined && f.listing.status !== 'deleted'
+      )
 
       setFavorites(validFavorites)
     } catch (error) {

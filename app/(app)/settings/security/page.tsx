@@ -50,7 +50,7 @@ interface Session {
 export default function SecuritySettingsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<{ totp_enabled: boolean; require_2fa: boolean } | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
   const [showSetup, setShowSetup] = useState(false)
   const [disabling2FA, setDisabling2FA] = useState(false)
@@ -105,9 +105,9 @@ export default function SecuritySettingsPage() {
       }
 
       toast.success('Two-factor authentication disabled')
-      setProfile({ ...profile, totp_enabled: false })
-    } catch (err: any) {
-      toast.error(err.message)
+      setProfile({ totp_enabled: false, require_2fa: profile?.require_2fa ?? false })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setDisabling2FA(false)
     }
@@ -127,8 +127,8 @@ export default function SecuritySettingsPage() {
 
       toast.success('Session revoked')
       setSessions(sessions.filter(s => s.id !== sessionId))
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setRevokingSession(null)
     }
@@ -153,8 +153,8 @@ export default function SecuritySettingsPage() {
       const { revokedCount } = await res.json()
       toast.success(`${revokedCount} session(s) revoked`)
       await fetchData()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred')
     }
   }
 

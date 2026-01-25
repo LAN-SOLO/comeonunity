@@ -18,11 +18,33 @@ import {
   Plus,
   Clock,
   Sparkles,
-  Activity,
 } from 'lucide-react'
 
 interface Props {
   params: Promise<{ communityId: string }>
+}
+
+interface BookingWithResource {
+  id: string
+  title: string | null
+  starts_at: string
+  ends_at: string
+  resource: { name: string } | { name: string }[] | null
+}
+
+interface NewsWithAuthor {
+  id: string
+  title: string
+  type: string
+  published_at: string
+  author: { display_name: string | null; avatar_url: string | null } | { display_name: string | null; avatar_url: string | null }[] | null
+}
+
+interface RecentMember {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  joined_at: string
 }
 
 export default async function CommunityDashboard({ params }: Props) {
@@ -76,9 +98,14 @@ export default async function CommunityDashboard({ params }: Props) {
   const isAdmin = membership.role === 'admin'
   const communitySlug = community.slug
 
-  // Fetch dashboard stats
-  const today = new Date()
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  // Server-side date computation for membership checks
+  // eslint-disable-next-line react-hooks/purity -- Server Component: Date is stable per request
+  const currentTimestamp = Date.now()
+  const today = new Date(currentTimestamp)
+  const weekAgo = new Date(currentTimestamp - 7 * 24 * 60 * 60 * 1000)
+  const isNewMember = membership.joined_at
+    ? new Date(membership.joined_at as string) > weekAgo
+    : false
 
   const [
     { count: totalMembers },
@@ -173,8 +200,7 @@ export default async function CommunityDashboard({ params }: Props) {
       </div>
 
       {/* Welcome Banner for new members */}
-      {membership.joined_at &&
-        new Date(membership.joined_at as string) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+      {isNewMember && (
         <WelcomeBanner
           communityId={communityId}
           memberName={membership.display_name}
@@ -250,14 +276,16 @@ export default async function CommunityDashboard({ params }: Props) {
           <Card>
             {upcomingBookings && upcomingBookings.length > 0 ? (
               <div className="divide-y divide-border">
-                {upcomingBookings.map((booking: any) => (
+                {upcomingBookings.map((booking: BookingWithResource) => {
+                  const resource = Array.isArray(booking.resource) ? booking.resource[0] : booking.resource
+                  return (
                   <div key={booking.id} className="p-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                       <Calendar className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">
-                        {booking.title || booking.resource?.name || 'Booking'}
+                        {booking.title || resource?.name || 'Booking'}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(booking.starts_at).toLocaleDateString('en-US', {
@@ -270,7 +298,8 @@ export default async function CommunityDashboard({ params }: Props) {
                       </p>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="p-8 text-center text-muted-foreground">
@@ -297,16 +326,18 @@ export default async function CommunityDashboard({ params }: Props) {
           <Card>
             {recentNews && recentNews.length > 0 ? (
               <div className="divide-y divide-border">
-                {recentNews.map((post: any) => (
+                {recentNews.map((post: NewsWithAuthor) => {
+                  const author = Array.isArray(post.author) ? post.author[0] : post.author
+                  return (
                   <Link
                     key={post.id}
                     href={`/c/${communitySlug}/news/${post.id}`}
                     className="p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors block"
                   >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={post.author?.avatar_url} />
+                      <AvatarImage src={author?.avatar_url ?? undefined} />
                       <AvatarFallback>
-                        {post.author?.display_name?.[0] || 'A'}
+                        {author?.display_name?.[0] || 'A'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -317,11 +348,12 @@ export default async function CommunityDashboard({ params }: Props) {
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {post.author?.display_name} · {new Date(post.published_at).toLocaleDateString()}
+                        {author?.display_name} · {new Date(post.published_at).toLocaleDateString()}
                       </p>
                     </div>
                   </Link>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="p-8 text-center text-muted-foreground">
@@ -356,14 +388,14 @@ export default async function CommunityDashboard({ params }: Props) {
           <Card className="p-4">
             {recentMembers && recentMembers.length > 0 ? (
               <div className="space-y-3">
-                {recentMembers.map((member: any) => (
+                {recentMembers.map((member: RecentMember) => (
                   <Link
                     key={member.id}
                     href={`/c/${communitySlug}/members/${member.id}`}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <Avatar>
-                      <AvatarImage src={member.avatar_url} />
+                      <AvatarImage src={member.avatar_url ?? undefined} />
                       <AvatarFallback>
                         {member.display_name?.[0] || 'M'}
                       </AvatarFallback>

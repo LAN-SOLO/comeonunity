@@ -7,9 +7,8 @@ const PROTECTED_ROUTES = ['/c/', '/communities', '/settings']
 // Routes that require platform admin role
 const ADMIN_ROUTES = ['/(admin)']
 
-// Auth routes (redirect authenticated users away, except logout)
+// Auth routes (redirect authenticated users away)
 const AUTH_ROUTES = ['/login', '/signup', '/forgot-password']
-const LOGOUT_ROUTE = '/logout'
 
 // Routes that should be publicly accessible (no auth required)
 const PUBLIC_PATTERNS = [

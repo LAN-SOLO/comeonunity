@@ -48,7 +48,6 @@ import {
   Shield,
   Ban,
   CheckCircle,
-  AlertTriangle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 

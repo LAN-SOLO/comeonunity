@@ -127,7 +127,7 @@ export default function ItemsPage() {
       if (error) throw error
 
       // Process data to fix owner type (Supabase returns it properly but TS thinks it's an array)
-      const processedItems = (data || []).map((item: any) => ({
+      const processedItems = (data || []).map((item: Record<string, unknown>) => ({
         ...item,
         owner: item.owner as Item['owner'],
       })) as Item[]

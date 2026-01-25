@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import type { AuditAction, AuditSeverity, AuditLogParams } from './audit-types'
+import type { AuditAction, AuditLogParams } from './audit-types'
 
 // Re-export types and client-safe utilities for convenience
 export { type AuditAction, type AuditSeverity, type AuditLogParams, formatAuditAction } from './audit-types'

@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { role, status, suspended_reason } = body
 
     // Build update object
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | null> = {}
 
     if (role !== undefined) {
       if (!['admin', 'moderator', 'member'].includes(role)) {

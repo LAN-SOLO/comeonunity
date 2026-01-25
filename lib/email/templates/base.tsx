@@ -1,4 +1,5 @@
 import * as React from 'react'
+import ReactDOMServer from 'react-dom/server'
 
 interface BaseEmailProps {
   previewText?: string
@@ -124,7 +125,5 @@ export function BaseEmail({ previewText, children }: BaseEmailProps) {
  * Render email to HTML string
  */
 export function renderEmail(component: React.ReactElement): string {
-  // Simple React to HTML rendering without external dependencies
-  const ReactDOMServer = require('react-dom/server')
   return '<!DOCTYPE html>' + ReactDOMServer.renderToStaticMarkup(component)
 }

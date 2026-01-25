@@ -169,38 +169,44 @@ export function ActivityFeed({ communitySlug, limit = 10 }: ActivityFeedProps) {
         const members = membersResult.data
 
         items?.forEach((item) => {
-          const owner = item.owner as any
+          // Transform Supabase array relation to single object
+          const ownerData = Array.isArray(item.owner) ? item.owner[0] : item.owner
+          const owner = ownerData as { id: string; display_name: string | null; avatar_url: string | null } | null
           allActivities.push({
             id: `item-${item.id}`,
             type: 'item_added',
             title: item.name,
             href: `/c/${communitySlug}/items/${item.id}`,
             timestamp: item.created_at,
-            actor: owner,
+            actor: owner ?? undefined,
           })
         })
 
         events?.forEach((event) => {
-          const organizer = event.organizer as any
+          // Transform Supabase array relation to single object
+          const organizerData = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer
+          const organizer = organizerData as { id: string; display_name: string | null; avatar_url: string | null } | null
           allActivities.push({
             id: `event-${event.id}`,
             type: 'event_created',
             title: event.title,
             href: `/c/${communitySlug}/calendar/${event.id}`,
             timestamp: event.created_at,
-            actor: organizer,
+            actor: organizer ?? undefined,
           })
         })
 
         news?.forEach((article) => {
-          const author = article.author as any
+          // Transform Supabase array relation to single object
+          const authorData = Array.isArray(article.author) ? article.author[0] : article.author
+          const author = authorData as { id: string; display_name: string | null; avatar_url: string | null } | null
           allActivities.push({
             id: `news-${article.id}`,
             type: 'news_published',
             title: article.title,
             href: `/c/${communitySlug}/news/${article.id}`,
             timestamp: article.published_at,
-            actor: author,
+            actor: author ?? undefined,
           })
         })
 

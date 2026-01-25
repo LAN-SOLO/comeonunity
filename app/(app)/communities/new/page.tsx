@@ -129,9 +129,9 @@ export default function NewCommunityPage() {
       }
 
       router.push(`/c/${community.id}`)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to create community:', err)
-      setError(err.message || 'Failed to create community. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to create community. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -181,7 +181,7 @@ export default function NewCommunityPage() {
             <Label htmlFor="type">Community Type *</Label>
             <Select
               value={selectedType}
-              onValueChange={(value) => setValue('type', value as any)}
+              onValueChange={(value) => setValue('type', value as CreateCommunityInput['type'])}
               disabled={isLoading}
             >
               <SelectTrigger>

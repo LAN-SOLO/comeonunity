@@ -486,6 +486,7 @@ export interface CreateWorkLocationInput {
   is_visible?: boolean
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Placeholder for future extension
 export interface UpdateWorkLocationInput extends Partial<CreateWorkLocationInput> {}
 
 // ============================================================================

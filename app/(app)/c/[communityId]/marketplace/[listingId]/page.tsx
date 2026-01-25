@@ -203,7 +203,11 @@ export default function ListingDetailPage() {
       .limit(5)
 
     if (data) {
-      setSellerReviews(data as Review[])
+      const reviews = data.map(review => ({
+        ...review,
+        reviewer: Array.isArray(review.reviewer) ? review.reviewer[0] : review.reviewer
+      })) as Review[]
+      setSellerReviews(reviews)
     }
   }
 
@@ -300,6 +304,8 @@ export default function ListingDetailPage() {
         if (convoError) throw convoError
         conversation = newConvo
       }
+
+      if (!conversation) throw new Error('Failed to get conversation')
 
       // Send message
       const { error: msgError } = await supabase
@@ -629,7 +635,7 @@ export default function ListingDetailPage() {
                 )}
                 <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
-                  Member since {formatDate((listing.seller as any)?.created_at || listing.created_at)}
+                  Listed {formatDate(listing.created_at)}
                 </div>
               </div>
               {!isOwnListing && (

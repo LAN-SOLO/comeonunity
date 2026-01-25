@@ -276,24 +276,27 @@ async function TeamLocationPreview({ communityId }: { communityId: string }) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {locations.map((loc: any) => (
+      {locations.map((loc) => {
+        // Handle Supabase relation that returns member as array
+        const member = Array.isArray(loc.member) ? loc.member[0] : loc.member
+        return (
         <div key={loc.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
           <div className="relative">
             <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-              {loc.member?.display_name?.[0]?.toUpperCase() || '?'}
+              {member?.display_name?.[0]?.toUpperCase() || '?'}
             </div>
             <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${locationColors[loc.location_type] || 'bg-gray-400'}`} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium truncate text-sm">
-              {loc.member?.display_name || 'Unknown'}
+              {member?.display_name || 'Unknown'}
             </div>
             <div className="text-xs text-muted-foreground">
               {locationLabels[loc.location_type] || loc.location_type}
             </div>
           </div>
         </div>
-      ))}
+      )})}
     </div>
   )
 }

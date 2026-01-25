@@ -179,9 +179,9 @@ export default function EditNewsPage() {
 
       setImageUrl(publicUrl)
       toast.success('Image uploaded')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err)
-      toast.error(err.message || 'Failed to upload image')
+      toast.error(err instanceof Error ? err.message : 'Failed to upload image')
     } finally {
       setIsUploading(false)
     }
@@ -200,7 +200,17 @@ export default function EditNewsPage() {
 
     setIsSaving(true)
     try {
-      const updateData: any = {
+      const updateData: {
+        title: string
+        excerpt: string
+        content: string
+        category: string
+        image_url: string | null
+        pinned: boolean
+        updated_at: string
+        status?: string
+        published_at?: string
+      } = {
         title: formData.title.trim(),
         excerpt: formData.excerpt.trim() || formData.content.trim().slice(0, 200),
         content: formData.content.trim(),
@@ -228,9 +238,9 @@ export default function EditNewsPage() {
 
       toast.success(publish ? 'Article updated!' : 'Changes saved')
       router.push(`/c/${communitySlug}/news/${articleId}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed:', err)
-      toast.error(err.message || 'Failed to save article')
+      toast.error(err instanceof Error ? err.message : 'Failed to save article')
     } finally {
       setIsSaving(false)
     }
@@ -248,9 +258,9 @@ export default function EditNewsPage() {
 
       toast.success('Article deleted')
       router.push(`/c/${communitySlug}/news`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Delete failed:', err)
-      toast.error(err.message || 'Failed to delete article')
+      toast.error(err instanceof Error ? err.message : 'Failed to delete article')
     } finally {
       setIsDeleting(false)
     }

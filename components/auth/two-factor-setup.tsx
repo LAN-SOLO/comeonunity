@@ -35,8 +35,9 @@ export function TwoFactorSetup() {
 
       setQrCode(data.qrCode)
       setStep('qr')
-    } catch (err: any) {
-      setError(err.message || 'Failed to start 2FA setup')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to start 2FA setup'
+      setError(message)
       toast.error('Failed to start 2FA setup')
     } finally {
       setLoading(false)
@@ -69,9 +70,10 @@ export function TwoFactorSetup() {
         toast.success('2FA verified successfully')
         router.refresh()
       }
-    } catch (err: any) {
-      setError(err.message || 'Verification failed')
-      toast.error(err.message || 'Invalid code')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Verification failed'
+      setError(message)
+      toast.error(message || 'Invalid code')
     } finally {
       setLoading(false)
     }

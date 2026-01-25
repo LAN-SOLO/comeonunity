@@ -71,9 +71,9 @@ export default function EmailSettingsPage() {
       })
       setNewEmail('')
       setPassword('')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Email update error:', error)
-      toast.error(error.message || 'Failed to update email')
+      toast.error(error instanceof Error ? error.message : 'Failed to update email')
     } finally {
       setSaving(false)
     }
@@ -166,8 +166,8 @@ export default function EmailSettingsPage() {
         </form>
 
         <p className="text-sm text-muted-foreground mt-4">
-          After submitting, you'll receive a verification email at your new address.
-          Your email won't change until you click the confirmation link.
+          After submitting, you&apos;ll receive a verification email at your new address.
+          Your email won&apos;t change until you click the confirmation link.
         </p>
       </Card>
     </div>

@@ -21,7 +21,7 @@ interface Notification {
   message: string
   read: boolean
   created_at: string
-  data?: Record<string, any>
+  data?: Record<string, unknown>
   actor?: {
     id: string
     display_name: string | null

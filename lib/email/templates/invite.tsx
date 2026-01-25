@@ -18,14 +18,14 @@ export function InviteEmail({
 }: InviteEmailProps) {
   return (
     <BaseEmail previewText={`${inviterName} invited you to join ${communityName}`}>
-      <h1>You're invited!</h1>
+      <h1>You&apos;re invited!</h1>
       <p>
         <strong>{inviterName}</strong> has invited you to join{' '}
         <strong>{communityName}</strong> on ComeOnUnity.
       </p>
       {communityDescription && (
         <p style={{ fontStyle: 'italic', color: '#71717a' }}>
-          "{communityDescription}"
+          &quot;{communityDescription}&quot;
         </p>
       )}
       <p>
@@ -44,7 +44,7 @@ export function InviteEmail({
       )}
       <hr className="divider" />
       <p className="text-muted">
-        If you don't want to join this community, you can safely ignore this email.
+        If you don&apos;t want to join this community, you can safely ignore this email.
       </p>
     </BaseEmail>
   )

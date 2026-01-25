@@ -18,7 +18,7 @@ export default function ProfileSettingsPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } } | null>(null)
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -95,7 +95,7 @@ export default function ProfileSettingsPage() {
 
       setAvatarUrl(publicUrl)
       toast.success('Profile photo updated')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Avatar upload error:', error)
       toast.error('Failed to upload photo')
     } finally {
@@ -116,7 +116,7 @@ export default function ProfileSettingsPage() {
 
       toast.success('Profile updated')
       router.push('/settings')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Profile update error:', error)
       toast.error('Failed to update profile')
     } finally {

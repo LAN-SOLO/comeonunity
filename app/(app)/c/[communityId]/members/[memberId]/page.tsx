@@ -267,7 +267,7 @@ export default async function MemberProfilePage({ params }: Props) {
             }
           />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-            {items.map((item: any) => (
+            {items.map((item: { id: string; name: string; category: string; status: string; images: string[] | null }) => (
               <Link key={item.id} href={`/c/${community.slug}/items/${item.id}`}>
                 <Card className="p-3 hover:shadow-md transition-shadow">
                   <div className="aspect-square rounded-lg bg-muted mb-2 flex items-center justify-center overflow-hidden">

@@ -100,9 +100,9 @@ export function BorrowRequestForm({
       router.refresh()
       setIsExpanded(false)
       setMessage('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit failed:', err)
-      toast.error(err.message || 'Failed to send request')
+      toast.error(err instanceof Error ? err.message : 'Failed to send request')
     } finally {
       setIsSubmitting(false)
     }

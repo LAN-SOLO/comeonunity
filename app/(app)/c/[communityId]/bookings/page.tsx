@@ -152,11 +152,34 @@ export default function MyBookingsPage() {
 
       if (error) throw error
 
-      setBookings((data || []).map((b: any) => ({
-        ...b,
-        resource: b.resource as Booking['resource'],
-        item: b.item as Booking['item'],
-      })))
+      // Handle Supabase's array format for relations
+      setBookings((data || []).map((b) => {
+        const resourceData = Array.isArray(b.resource) ? b.resource[0] : b.resource
+        const itemData = Array.isArray(b.item) ? b.item[0] : b.item
+
+        // Handle nested owner relation in item
+        let processedItem: Booking['item'] = null
+        if (itemData) {
+          const ownerData = Array.isArray(itemData.owner) ? itemData.owner[0] : itemData.owner
+          processedItem = {
+            id: itemData.id,
+            name: itemData.name,
+            images: itemData.images,
+            owner: ownerData || { id: '', display_name: null }
+          }
+        }
+
+        return {
+          id: b.id,
+          start_time: b.start_time,
+          end_time: b.end_time,
+          status: b.status,
+          message: b.message,
+          created_at: b.created_at,
+          resource: resourceData || null,
+          item: processedItem,
+        }
+      }))
     } catch {
       // Silently fail - tables may not exist yet
     } finally {
@@ -176,9 +199,10 @@ export default function MyBookingsPage() {
 
       toast.success('Booking cancelled')
       fetchBookings()
-    } catch (err: any) {
+    } catch (err) {
       console.error('Cancel failed:', err)
-      toast.error(err.message || 'Failed to cancel booking')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel booking'
+      toast.error(errorMessage)
     } finally {
       setCancellingId(null)
     }
@@ -315,7 +339,7 @@ export default function MyBookingsPage() {
                   <DialogHeader>
                     <DialogTitle>Cancel Booking?</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to cancel your booking for "{name}"?
+                      Are you sure you want to cancel your booking for &quot;{name}&quot;?
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>

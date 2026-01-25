@@ -130,7 +130,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
 
     // Build update object
-    const updates: Record<string, any> = {}
+    const updates: Record<string, unknown> = {}
     const allowedFields = [
       'title',
       'description',

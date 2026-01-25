@@ -96,9 +96,9 @@ export function OwnerReservationForm({
       router.refresh()
       setIsExpanded(false)
       setReason('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Reservation failed:', err)
-      toast.error(err.message || 'Failed to reserve item')
+      toast.error(err instanceof Error ? err.message : 'Failed to reserve item')
     } finally {
       setIsSubmitting(false)
     }

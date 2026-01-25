@@ -21,15 +21,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'de' || stored === 'en') {
-      setLanguageState(stored)
+      queueMicrotask(() => setLanguageState(stored))
     } else {
       // Detect browser language
       const browserLang = navigator.language.toLowerCase()
       if (browserLang.startsWith('de')) {
-        setLanguageState('de')
+        queueMicrotask(() => setLanguageState('de'))
       }
     }
-    setIsHydrated(true)
+    queueMicrotask(() => setIsHydrated(true))
   }, [])
 
   const setLanguage = (lang: Language) => {

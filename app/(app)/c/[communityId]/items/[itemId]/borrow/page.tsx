@@ -240,9 +240,10 @@ export default function BorrowRequestPage() {
 
       toast.success('Borrow request sent!')
       router.push(`/c/${communitySlug}/items/${itemId}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Submit failed:', err)
-      toast.error(err.message || 'Failed to send request')
+      const message = err instanceof Error ? err.message : 'Failed to send request'
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }

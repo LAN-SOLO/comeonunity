@@ -64,11 +64,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 })
     }
 
+    // Define owner type
+    type OwnerType = {
+      id: string
+      user_id: string
+      display_name: string
+      avatar_url: string | null
+      unit_number: string | null
+      phone: string | null
+      show_phone: boolean
+      show_email: boolean
+    } | null
+
+    // Transform Supabase array relation to single object
+    const ownerData = Array.isArray(item.owner) ? item.owner[0] : item.owner
+
     // Check if viewing own item
-    const isOwner = (item.owner as any)?.id === membership.id
+    const isOwner = (ownerData as OwnerType)?.id === membership.id
 
     // Process owner contact info based on privacy settings
-    const owner = item.owner as any
+    const owner = ownerData as OwnerType
     const processedItem = {
       ...item,
       isOwner,
@@ -141,7 +156,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     ]
 
     // Filter to only allowed fields
-    const updates: Record<string, any> = {}
+    const updates: Record<string, unknown> = {}
     for (const field of allowedFields) {
       if (field in body) {
         updates[field] = body[field]
@@ -153,7 +168,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Validate status
-    if (updates.status && !['available', 'borrowed', 'unavailable'].includes(updates.status)) {
+    if (updates.status && typeof updates.status === 'string' && !['available', 'borrowed', 'unavailable'].includes(updates.status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 

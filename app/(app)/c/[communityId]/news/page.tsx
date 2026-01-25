@@ -123,9 +123,16 @@ export default function NewsPage() {
         return
       }
 
-      const processedArticles = (data || []).map((article: any) => ({
-        ...article,
-        author: article.author as Article['author'],
+      // Handle Supabase's array format for relations
+      const processedArticles = (data || []).map((article) => ({
+        id: article.id,
+        title: article.title,
+        excerpt: article.excerpt,
+        category: article.category,
+        image_url: article.image_url,
+        pinned: article.pinned,
+        published_at: article.published_at,
+        author: Array.isArray(article.author) ? article.author[0] || null : article.author as Article['author'],
       }))
 
       setArticles(processedArticles)

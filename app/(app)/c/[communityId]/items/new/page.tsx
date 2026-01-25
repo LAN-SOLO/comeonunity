@@ -245,9 +245,10 @@ export default function NewItemPage() {
 
       toast.success('Item added successfully!')
       router.push(`/c/${communitySlug}/items/${item.id}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed:', err)
-      toast.error(err.message || 'Failed to add item')
+      const message = err instanceof Error ? err.message : 'Failed to add item'
+      toast.error(message)
     } finally {
       setIsSaving(false)
     }

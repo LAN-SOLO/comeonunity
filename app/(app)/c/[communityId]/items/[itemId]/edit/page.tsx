@@ -286,9 +286,10 @@ export default function EditItemPage() {
 
       toast.success('Item updated successfully!')
       router.push(`/c/${communitySlug}/items/${itemId}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save failed:', err)
-      toast.error(err.message || 'Failed to update item')
+      const message = err instanceof Error ? err.message : 'Failed to update item'
+      toast.error(message)
     } finally {
       setIsSaving(false)
     }
@@ -306,9 +307,10 @@ export default function EditItemPage() {
 
       toast.success('Item deleted')
       router.push(`/c/${communitySlug}/items`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Delete failed:', err)
-      toast.error(err.message || 'Failed to delete item')
+      const message = err instanceof Error ? err.message : 'Failed to delete item'
+      toast.error(message)
     } finally {
       setIsDeleting(false)
     }
@@ -544,7 +546,7 @@ export default function EditItemPage() {
                   <DialogHeader>
                     <DialogTitle>Delete Item?</DialogTitle>
                     <DialogDescription>
-                      This will permanently delete "{formData.name}" from the lending library.
+                      This will permanently delete &quot;{formData.name}&quot; from the lending library.
                       This action cannot be undone.
                     </DialogDescription>
                   </DialogHeader>

@@ -43,7 +43,6 @@ import {
   Ban,
   Loader2,
   UserCog,
-  Mail,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -82,7 +81,7 @@ export default function AdminMembersPage() {
   const params = useParams()
   const communitySlug = params.communityId as string
 
-  const [communityId, setCommunityId] = useState<string | null>(null)
+  const [, setCommunityId] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')

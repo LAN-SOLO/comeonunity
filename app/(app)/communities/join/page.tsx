@@ -19,16 +19,18 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
+interface CommunityData {
+  id: string
+  name: string
+  description: string | null
+  type: string
+  logo_url: string | null
+}
+
 interface InviteInfo {
   id: string
   code: string
-  community: {
-    id: string
-    name: string
-    description: string | null
-    type: string
-    logo_url: string | null
-  }
+  community: CommunityData
   expiresAt: string | null
   remainingUses: number | null
 }
@@ -103,11 +105,14 @@ export default function JoinCommunityPage() {
 
       // Check if user is already a member
       const { data: { user } } = await supabase.auth.getUser()
+      // Transform Supabase array relation to single object
+      const communityRaw = Array.isArray(inviteData.community) ? inviteData.community[0] : inviteData.community
+      const communityData = communityRaw as CommunityData
       if (user) {
         const { data: existingMember } = await supabase
           .from('community_members')
           .select('id, status')
-          .eq('community_id', (inviteData.community as any).id)
+          .eq('community_id', communityData.id)
           .eq('user_id', user.id)
           .single()
 
@@ -125,7 +130,7 @@ export default function JoinCommunityPage() {
       setInvite({
         id: inviteData.id,
         code: inviteData.code,
-        community: inviteData.community as any,
+        community: communityData,
         expiresAt: inviteData.expires_at,
         remainingUses: inviteData.max_uses > 0 ? inviteData.max_uses - inviteData.uses : null,
       })
@@ -176,9 +181,9 @@ export default function JoinCommunityPage() {
       setTimeout(() => {
         router.push(`/c/${invite.community.id}`)
       }, 2000)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to join community:', err)
-      setError(err.message || 'Failed to join community. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to join community. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -201,7 +206,7 @@ export default function JoinCommunityPage() {
           </div>
           <h2 className="text-2xl font-bold mb-2">Welcome!</h2>
           <p className="text-muted-foreground mb-4">
-            You've successfully joined {invite?.community.name}. Redirecting to your new community...
+            You&apos;ve successfully joined {invite?.community.name}. Redirecting to your new community...
           </p>
           <Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" />
         </Card>
@@ -312,7 +317,7 @@ export default function JoinCommunityPage() {
 
         <div className="text-center pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground mb-2">
-            Don't have an invite code?
+            Don&apos;t have an invite code?
           </p>
           <Button variant="outline" asChild>
             <Link href="/communities/new">

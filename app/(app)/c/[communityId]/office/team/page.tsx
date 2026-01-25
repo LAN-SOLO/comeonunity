@@ -132,7 +132,18 @@ export default function TeamCalendarPage() {
 
       if (error) throw error
 
-      setLocations(locationData || [])
+      // Transform nested arrays to single objects
+      const transformedData: WorkLocationWithMember[] = (locationData || []).map((loc) => ({
+        id: loc.id,
+        member_id: loc.member_id,
+        date: loc.date,
+        location_type: loc.location_type as LocationType,
+        notes: loc.notes,
+        member: Array.isArray(loc.member) ? loc.member[0] : loc.member,
+        desk: Array.isArray(loc.desk) ? loc.desk[0] : loc.desk,
+      }))
+
+      setLocations(transformedData)
 
       // Extract my locations
       const myLocs: Record<string, LocationType> = {}

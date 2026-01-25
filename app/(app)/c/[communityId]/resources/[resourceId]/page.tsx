@@ -212,9 +212,13 @@ export default function ResourceDetailPage() {
       .order('start_time')
 
     if (!error && data) {
-      setBookings(data.map((b: any) => ({
-        ...b,
-        member: b.member as Booking['member'],
+      // Handle Supabase's array format for relations
+      setBookings(data.map((b) => ({
+        id: b.id,
+        start_time: b.start_time,
+        end_time: b.end_time,
+        status: b.status,
+        member: Array.isArray(b.member) ? b.member[0] || null : b.member as Booking['member'],
       })))
     }
   }
@@ -297,9 +301,10 @@ export default function ResourceDetailPage() {
       setBookingDialogOpen(false)
       setBookingNote('')
       fetchBookingsForDate(selectedDate)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Booking failed:', err)
-      toast.error(err.message || 'Failed to create booking')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create booking'
+      toast.error(errorMessage)
     } finally {
       setIsBooking(false)
     }

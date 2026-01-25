@@ -58,7 +58,7 @@ export function PlanStatusBadge({ plan, isTestMode = false, className }: PlanSta
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    queueMicrotask(() => setMounted(true));
   }, []);
 
   if (!mounted) return null;

@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const previousState = { ...community }
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | null> = {}
 
     if (action === 'suspend') {
       updates.status = 'suspended'

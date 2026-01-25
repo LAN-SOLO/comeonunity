@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
-    const updates: Record<string, any> = {}
+    const updates: Record<string, string | null> = {}
 
     if (action === 'review') {
       if (report.status !== 'pending') {

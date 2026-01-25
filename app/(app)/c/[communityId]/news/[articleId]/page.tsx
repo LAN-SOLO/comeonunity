@@ -165,7 +165,15 @@ export default async function NewsArticlePage({ params }: Props) {
     redirect('/login')
   }
 
-  const author = article.author as any
+  interface Author {
+    id: string
+    display_name: string | null
+    avatar_url: string | null
+    role: string
+  }
+  // Handle Supabase's array format for relations
+  const authorData = article.author
+  const author: Author | null = Array.isArray(authorData) ? authorData[0] || null : authorData as Author | null
   const authorName = author?.display_name || 'Admin'
   const authorInitials = authorName
     .split(' ')
