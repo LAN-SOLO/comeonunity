@@ -122,8 +122,16 @@ export function AddonsManager({
     }
   };
 
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; name: string } | null>(null);
+
   const handleCancel = async (addonId: string, addonName: string) => {
-    if (!confirm(`Are you sure you want to remove ${addonName}?`)) return;
+    setCancelTarget({ id: addonId, name: addonName });
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    const { id: addonId, name: addonName } = cancelTarget;
+    setCancelTarget(null);
 
     setLoading(addonId);
     try {
@@ -146,6 +154,23 @@ export function AddonsManager({
       setLoading(null);
     }
   };
+
+  const cancelDialog = cancelTarget ? (
+    <Dialog open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove Add-on</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to remove {cancelTarget.name}? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setCancelTarget(null)}>Cancel</Button>
+          <Button variant="destructive" onClick={confirmCancel}>Remove</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ) : null;
 
   const openPurchaseDialog = (addon: (typeof AVAILABLE_ADDONS)[0]) => {
     setSelectedAddon(addon);
@@ -172,6 +197,7 @@ export function AddonsManager({
 
   return (
     <>
+      {cancelDialog}
       <div className="space-y-6">
         {/* Capacity Add-ons */}
         <Card>

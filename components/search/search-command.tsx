@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import {
   CommandDialog,
@@ -103,6 +104,7 @@ export function SearchCommand({ communityId }: SearchCommandProps) {
       setResults(data.results || [])
     } catch (err) {
       console.error('Search error:', err)
+      toast.error('Search failed. Please try again.')
       setResults([])
     } finally {
       setIsLoading(false)

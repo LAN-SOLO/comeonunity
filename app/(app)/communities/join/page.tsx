@@ -169,11 +169,8 @@ export default function JoinCommunityPage() {
         throw memberError
       }
 
-      // Increment invite uses
-      await supabase
-        .from('invites')
-        .update({ uses: (await supabase.from('invites').select('uses').eq('id', invite.id).single()).data?.uses + 1 })
-        .eq('id', invite.id)
+      // Atomically increment invite uses
+      await supabase.rpc('increment_invite_uses', { invite_id: invite.id })
 
       setSuccess(true)
 

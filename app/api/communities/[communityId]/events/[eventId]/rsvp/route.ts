@@ -188,6 +188,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Failed to save RSVP' }, { status: 500 })
     }
 
+    // Re-check attendee count after upsert to prevent race condition overbooking
+    if (status === 'going' && event.max_attendees) {
+      const { count: postCount } = await supabase
+        .from('event_rsvps')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', eventId)
+        .eq('status', 'going')
+
+      if ((postCount || 0) > event.max_attendees) {
+        // Rollback: delete the RSVP we just inserted
+        await supabase
+          .from('event_rsvps')
+          .delete()
+          .eq('id', rsvp.id)
+
+        return NextResponse.json({ error: 'Event is full' }, { status: 400 })
+      }
+    }
+
     return NextResponse.json({ rsvp })
   } catch (err) {
     console.error('RSVP API error:', err)

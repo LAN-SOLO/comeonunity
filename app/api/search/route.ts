@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 interface Community {
   id: string
@@ -30,6 +31,13 @@ interface SearchResult {
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit
+    const ip = getClientIp(request)
+    const { success } = await checkRateLimit('api', `search:${ip}`)
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const supabase = await createClient()
 
     // Check authentication

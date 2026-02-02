@@ -48,6 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         avatar_url,
         bio,
         unit_number,
+        email,
         phone,
         show_phone,
         show_email,
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const processedMembers = filteredMembers.map((member) => ({
       ...member,
       phone: member.show_phone ? member.phone : undefined,
+      email: member.show_email ? member.email : undefined,
     }))
 
     return NextResponse.json({

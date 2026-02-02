@@ -172,6 +172,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
+    // Validate status transitions
+    if (updates.status === 'borrowed') {
+      const { data: activeRequest } = await supabase
+        .from('borrow_requests')
+        .select('id')
+        .eq('item_id', itemId)
+        .in('status', ['approved', 'active'])
+        .limit(1)
+        .single()
+
+      if (!activeRequest) {
+        return NextResponse.json({ error: 'Cannot set status to borrowed without an active borrow request' }, { status: 400 })
+      }
+    }
+
     // Perform update
     const { data: updatedItem, error } = await supabase
       .from('items')

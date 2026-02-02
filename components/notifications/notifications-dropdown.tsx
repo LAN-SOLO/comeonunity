@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/popover'
 import { NotificationItem } from './notification-item'
 import { Bell, Loader2, CheckCheck } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Notification {
   id: string
@@ -165,8 +166,8 @@ export function NotificationsDropdown({ communityId: communitySlug }: Notificati
               channel?.unsubscribe()
             }
           })
-      } catch {
-        // Silently fail
+      } catch (err) {
+        console.error('Failed to subscribe to notifications:', err)
       }
     }
 
@@ -193,8 +194,9 @@ export function NotificationsDropdown({ communityId: communitySlug }: Notificati
         )
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
-    } catch {
-      // Silently fail
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err)
+      toast.error('Failed to update notification')
     }
   }
 
@@ -223,8 +225,9 @@ export function NotificationsDropdown({ communityId: communitySlug }: Notificati
 
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
       setUnreadCount(0)
-    } catch {
-      // Silently fail
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err)
+      toast.error('Failed to update notifications')
     }
   }
 

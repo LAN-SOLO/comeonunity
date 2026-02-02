@@ -209,6 +209,20 @@ export default function BorrowRequestPage() {
 
     setIsSubmitting(true)
     try {
+      // Check for overlapping borrow requests
+      const { data: overlapping } = await supabase
+        .from('borrow_requests')
+        .select('id')
+        .eq('item_id', itemId)
+        .in('status', ['pending', 'approved', 'active'])
+        .lte('start_date', endDate.toISOString().split('T')[0])
+        .gte('end_date', startDate.toISOString().split('T')[0])
+
+      if (overlapping && overlapping.length > 0) {
+        toast.error('This item already has a borrow request for the selected dates')
+        return
+      }
+
       // Create borrow request
       const { data: borrowRequest, error } = await supabase
         .from('borrow_requests')

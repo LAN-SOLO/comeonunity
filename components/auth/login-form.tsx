@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createClient } from '@/lib/supabase/client'
 import { loginSchema, type LoginInput } from '@/lib/validations/auth'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -89,7 +90,7 @@ export function LoginForm() {
         setError(null)
         setNeedsVerification(false)
         // Show success
-        alert('Verification email sent! Please check your inbox.')
+        toast.success('Verification email sent! Please check your inbox.')
       }
     } catch (err) {
       setError(parseAuthError(err))

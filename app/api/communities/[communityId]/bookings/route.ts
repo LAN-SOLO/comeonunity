@@ -225,6 +225,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
+    // Re-check for conflicts after insert to prevent race condition double-booking
+    if (resource_id) {
+      const { data: overlapping } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('resource_id', resource_id)
+        .in('status', ['pending', 'approved', 'active'])
+        .or(`and(start_time.lt.${end_time},end_time.gt.${start_time})`)
+
+      if (overlapping && overlapping.length > 1) {
+        // Conflict detected - rollback
+        await supabase.from('bookings').delete().eq('id', booking.id)
+        return NextResponse.json({ error: 'Time slot conflicts with existing booking' }, { status: 409 })
+      }
+    }
+
     return NextResponse.json({ booking }, { status: 201 })
   } catch (err) {
     console.error('Bookings API error:', err)
